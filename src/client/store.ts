@@ -16,7 +16,7 @@ export interface Progress {
 }
 export interface Settings { tab: string }
 
-const KEYS = { progress: "groschen.progress", settings: "groschen.settings", calc: "groschen.calc" };
+const KEYS = { progress: "fintelify.progress", settings: "fintelify.settings", calc: "fintelify.calc" };
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -43,8 +43,6 @@ export const store = {
   wipe() {
     for (const k of Object.values(KEYS)) { try { localStorage.removeItem(k); } catch { /* egal */ } }
     this.progress = freshProgress();
-    // Alte Daten früherer Versionen mit Coach ebenfalls entfernen.
-    for (const k of ["groschen.profile", "groschen.conversation", "groschen.device"]) { try { localStorage.removeItem(k); } catch { /* egal */ } }
     this.settings = { tab: "learn" };
     this.calc = {};
   },

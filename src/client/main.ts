@@ -49,7 +49,7 @@ function renderMore(m: HTMLElement) {
     <div class="section-title"><h2>Mehr</h2></div>
     <div class="panel stack">
       <h3>Deine Daten</h3>
-      <p class="muted">Groschen speichert deinen Lernfortschritt und deine Rechner-Eingaben nur auf diesem Gerät. Es gibt keine Anmeldung, keine Cookies und kein Tracking.</p>
+      <p class="muted">Fintelify speichert deinen Lernfortschritt und deine Rechner-Eingaben nur auf diesem Gerät. Es gibt keine Anmeldung, keine Cookies und kein Tracking.</p>
       <div class="row-actions"><button class="btn ghost" id="wipe">Alle Daten auf diesem Gerät löschen</button></div>
       <div id="wipeConfirm" hidden class="confirm">
         <p>Wirklich alles löschen? Dein Lernfortschritt ist danach weg.</p>
@@ -57,8 +57,8 @@ function renderMore(m: HTMLElement) {
       </div>
     </div>
     <div class="panel stack">
-      <h3>Über Groschen</h3>
-      <p class="muted">Groschen vermittelt Finanzwissen für Deutschland. Die Inhalte dienen der allgemeinen Information und ersetzen keine individuelle Anlage-, Steuer- oder Rechtsberatung.</p>
+      <h3>Über Fintelify</h3>
+      <p class="muted">Fintelify vermittelt Finanzwissen für Deutschland. Die Inhalte dienen der allgemeinen Information und ersetzen keine individuelle Anlage-, Steuer- oder Rechtsberatung.</p>
       <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a> · <a href="nutzungsbedingungen.html">Nutzungsbedingungen</a></p>
     </div>`;
   $("#wipe", m).addEventListener("click", () => { $("#wipeConfirm", m).hidden = false; });

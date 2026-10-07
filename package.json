@@ -1,8 +1,8 @@
 {
-  "name": "groschen",
+  "name": "fintelify",
   "version": "0.1.0",
   "private": true,
-  "description": "Groschen: spielerische Finanz-Lern-App für Deutschland",
+  "description": "Fintelify: spielerische Finanz-Lern-App für Deutschland",
   "type": "module",
   "engines": {
     "node": ">=20"

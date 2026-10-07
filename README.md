@@ -1,4 +1,6 @@
-# Groschen
+# Fintelify
+
+> **Hinweis zum Namen:** Fintelify ist der Name der App von Mattia Freund. Diese Version ist als Vorschlag für ihn gedacht und darf unter diesem Namen erst veröffentlicht werden, wenn er zugestimmt hat. Die automatische Veröffentlichung ist deshalb abgeschaltet.
 
 Eine spielerische Finanz-Lern-App für Deutschland: kurze Lektionen mit Quiz, Lernserien und XP, ein Übungsstapel für falsche Antworten und fünf Finanzrechner.
 
@@ -41,7 +43,7 @@ Weil die App nur aus Dateien besteht, kann sie kostenlos gehostet werden.
 **GitHub Pages (eingerichtet):**
 
 1. Im Repository auf GitHub unter **Settings → Pages** bei „Source“ **GitHub Actions** wählen.
-2. Den Code auf den Branch `main` bringen. Der Workflow `.github/workflows/pages.yml` prüft und baut die App und stellt sie online.
+2. Unter **Actions → Veröffentlichen → Run workflow** den Workflow von Hand starten. Er prüft und baut die App und stellt sie online. Erst machen, wenn Mattia dem Namen zugestimmt hat.
 3. Die Adresse steht danach unter Settings → Pages, meist `https://<benutzername>.github.io/<repository>/`.
 
 **Andere Anbieter** (Netlify, Cloudflare Pages und ähnliche): Build-Befehl `npm run build`, Ausgabeordner `public`.

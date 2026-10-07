@@ -1,10 +1,10 @@
 # Baut die App und veröffentlicht sie auf GitHub Pages.
+# Startet nur von Hand (Actions → Veröffentlichen → Run workflow), weil der
+# Name Fintelify erst mit Zustimmung von Mattia Freund öffentlich werden soll.
 # Einmalig nötig: im Repository unter Settings → Pages bei "Source" "GitHub Actions" wählen.
 name: Veröffentlichen
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

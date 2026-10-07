@@ -17,7 +17,7 @@ if (process.argv.includes("--serve")) {
   const ctx = await context({ ...options, minify: false });
   await ctx.watch();
   const { port } = await ctx.serve({ servedir: "public", port: 3000 });
-  console.log(`Groschen läuft auf http://localhost:${port}`);
+  console.log(`Fintelify läuft auf http://localhost:${port}`);
 } else {
   await build(options);
 }
