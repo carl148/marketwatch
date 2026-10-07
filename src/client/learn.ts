@@ -18,7 +18,7 @@ interface Player {
 }
 
 let player: Player | null = null;
-let hooks = { rerender: () => {}, askCoach: (_q: string) => {}, stats: () => {} };
+let hooks = { rerender: () => {}, stats: () => {} };
 export function initLearn(h: typeof hooks) { hooks = h; }
 export const inPlayer = () => player !== null;
 export function closePlayer() { player = null; }
@@ -40,7 +40,7 @@ export function renderLearn(m: HTMLElement) {
       <div>
         <span class="eyebrow on-dark">${doneCount} von ${ALL_LESSONS.length} Lektionen</span>
         <h2>${nx ? "Weiter mit: " + esc(nx.title) : "Alle Lektionen geschafft"}</h2>
-        <p>${nx ? `${esc(nx.unit.title)} · etwa ${nx.mins} Minuten` : "Halte dein Wissen im Wiederholen-Tab frisch oder frag den Coach."}</p>
+        <p>${nx ? `${esc(nx.unit.title)} · etwa ${nx.mins} Minuten` : "Halte dein Wissen im Üben-Tab frisch oder probier die Rechner aus."}</p>
         ${nx ? `<button class="btn" id="continueBtn">Lektion starten</button>` : ""}
       </div>
       <div class="lvl"><span class="eyebrow on-dark">Level</span><b>${lvl}</b><span class="num small">${p.xp - a} / ${b - a} XP</span></div>
@@ -60,7 +60,7 @@ export function renderLearn(m: HTMLElement) {
         }).join("")}</div>
       </section>`;
     }).join("")}</div>
-    <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${Object.keys(p.ach).length} / ${ACHIEVEMENTS.length}</span></div>
+    <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${ACHIEVEMENTS.filter(x => p.ach[x.id]).length} / ${ACHIEVEMENTS.length}</span></div>
     <div class="ach">${ACHIEVEMENTS.map(x => `<span class="${p.ach[x.id] ? "got" : ""}">${esc(x.name)}</span>`).join("")}</div>`;
   $("#continueBtn", m)?.addEventListener("click", () => nx && startLesson(nx.id));
   $$("[data-lesson]", m).forEach(b => b.addEventListener("click", () => startLesson(b.dataset.lesson!)));
@@ -124,6 +124,8 @@ function answer(i: number) {
   if (i === q.c) {
     p.correct++;
     p.xp += 10;
+    prog.correct = (prog.correct ?? 0) + 1;
+    if (prog.correct >= 50) unlock("correct50");
     addXp(10);
     if (p.mode === "review") prog.review = prog.review.filter(x => x !== q.id);
   } else if (!prog.review.includes(q.id)) prog.review.push(q.id);
@@ -152,7 +154,6 @@ function renderResult(m: HTMLElement) {
     hooks.stats();
   }
   const nx = nextLesson();
-  const topic = p.lesson ? p.lesson.title : "";
   m.innerHTML = `<div class="player"><article class="card result">
     <span class="eyebrow">${p.mode === "lesson" ? "Lektion abgeschlossen" : "Wiederholung beendet"}</span>
     <h2>${perfect ? "Fehlerfrei!" : p.correct >= qn / 2 ? "Gut gemacht!" : "Dranbleiben lohnt sich"}</h2>
@@ -165,12 +166,10 @@ function renderResult(m: HTMLElement) {
     ${todayXp() >= DAILY_GOAL ? `<p class="good-text">Tagesziel erreicht.</p>` : ""}
   </article>
   <div class="actions">
-    ${topic ? `<button class="btn ghost" id="askCoach">Coach fragen</button>` : ""}
     ${p.mode === "lesson" && nx ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn" id="goNext">Nächste Lektion</button>` : `<button class="btn" id="toPath">Fertig</button>`}
   </div></div>`;
   $("#toPath", m).addEventListener("click", () => { player = null; hooks.rerender(); });
   $("#goNext", m)?.addEventListener("click", () => startLesson(nx!.id));
-  $("#askCoach", m)?.addEventListener("click", () => { player = null; hooks.askCoach(`Ich habe gerade die Lektion "${topic}" gemacht. Erklär mir das Thema bitte noch einmal mit einem Beispiel aus meinem Alltag und stell mir danach ein kurzes Quiz.`); });
 }
 
 export function renderReview(m: HTMLElement) {

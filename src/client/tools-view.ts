@@ -1,10 +1,9 @@
-import { budget, eur, kapitalertragsteuer, kredit, notgroschen, num, sparplan } from "../shared/calc.ts";
-import { sparplanCard } from "./cards.ts";
+import { budget, eur, kapitalertragsteuer, kredit, notgroschen, num, pct, sparplan } from "../shared/calc.ts";
 import { drawSparplan } from "./chart.ts";
 import { store, unlock } from "./store.ts";
 import { $, $$, esc } from "./ui.ts";
 
-// Rechner-Tab: dieselben Rechner, die auch der Coach benutzt, mit eigenen Zahlen.
+// Rechner-Tab: Finanzrechner mit eigenen Zahlen.
 
 const DEFAULTS: Record<string, number> = {
   start: 1000, rate: 100, ret: 7, years: 30, ter: 0.2,
@@ -70,10 +69,19 @@ export function renderTools(m: HTMLElement) {
 
 const kpi = (label: string, value: string, main = false) => `<div class="kpi${main ? " main" : ""}"><small>${esc(label)}</small><b>${value}</b></div>`;
 
+function sparplanCard(raw: Record<string, unknown>, chartId: string): string {
+  const r = sparplan(raw);
+  const d = r.input;
+  return `<div class="kcard flat">
+    <div class="kpis">${kpi("Endwert", eur(r.endwert), true)}${kpi("Eingezahlt", eur(r.eingezahlt))}${kpi("Ertrag", eur(r.ertrag))}${kpi(`Kaufkraft heute (${pct(d.inflation_prozent)} Inflation)`, eur(r.kaufkraft_heute))}</div>
+    <canvas class="chart" id="${esc(chartId)}" data-sparplan="${esc(JSON.stringify(d))}" role="img" aria-label="Wachstum des Sparplans über ${d.jahre} Jahre bis ${eur(r.endwert)}"></canvas>
+    <div class="legend"><span><i class="sw-a"></i>Eingezahlt</span><span><i class="sw-b"></i>Ertrag</span>${d.kosten_prozent ? `<span>Kosten von ${pct(d.kosten_prozent)} p. a. kosten rund ${eur(r.kosten_verlust)}</span>` : ""}</div></div>`;
+}
+
 function update(m: HTMLElement) {
   const sp = { startbetrag: v("start"), monatsrate: v("rate"), rendite_prozent: v("ret"), jahre: v("years"), kosten_prozent: v("ter") };
   const r = sparplan(sp);
-  $("#sparOut", m).innerHTML = sparplanCard(sp, "chart-tool").replace('<div class="kcard">', '<div class="kcard flat">')
+  $("#sparOut", m).innerHTML = sparplanCard(sp, "chart-tool")
     + `<p class="hint">Vor Steuern gerechnet, über ${r.input.jahre} Jahre.</p>`;
   const cv = $("#chart-tool", m) as HTMLCanvasElement | null;
   if (cv) requestAnimationFrame(() => drawSparplan(cv));

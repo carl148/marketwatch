@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { budget, inflation, kapitalertragsteuer, kredit, notgroschen, num, sanitizeQuiz, sparplan } from "../src/shared/calc.ts";
+import { budget, inflation, kapitalertragsteuer, kredit, notgroschen, num, sparplan } from "../src/shared/calc.ts";
 
 test("num liest deutsche und Formular-Schreibweise", () => {
   assert.equal(num("1.500,50"), 1500.5);
@@ -84,19 +84,4 @@ test("Notgroschen", () => {
   assert.deepEqual(notgroschen(1500, 4, 1000, 500), { ziel: 6000, monate_bis_ziel: 10 });
   assert.deepEqual(notgroschen(1500, 3, 9000, 500), { ziel: 4500, monate_bis_ziel: 0 });
   assert.equal(notgroschen(1500, 3, 0, 0).monate_bis_ziel, null);
-});
-
-test("Quiz: ungültige Fragen werden aussortiert", () => {
-  const q = sanitizeQuiz({
-    thema: "Test",
-    fragen: [
-      { frage: "Gut", antworten: ["a", "b", "c"], richtig: 1, erklaerung: "weil" },
-      { frage: "Index zu groß", antworten: ["a", "b"], richtig: 5 },
-      { frage: "Zu wenig Antworten", antworten: ["a"], richtig: 0 },
-      "kein Objekt",
-    ],
-  });
-  assert.equal(q?.fragen.length, 1);
-  assert.equal(q?.fragen[0].frage, "Gut");
-  assert.equal(sanitizeQuiz({ fragen: [] }), null);
 });

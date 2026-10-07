@@ -1,8 +1,7 @@
-// Baut App (public/app.js) und Server (dist/server.js) mit esbuild.
-import { build } from "esbuild";
-import { pathToFileURL } from "node:url";
+// Baut die App nach public/app.js. Danach ist public/ eine fertige statische Website.
+import { build, context } from "esbuild";
 
-export const clientOptions = {
+const options = {
   entryPoints: ["src/client/main.ts"],
   bundle: true,
   format: "esm",
@@ -13,20 +12,12 @@ export const clientOptions = {
   logLevel: "info",
 };
 
-export const serverOptions = {
-  entryPoints: ["src/server/index.ts"],
-  bundle: true,
-  platform: "node",
-  format: "esm",
-  target: "node20",
-  packages: "external",
-  outfile: "dist/server.js",
-  sourcemap: true,
-  logLevel: "info",
-};
-
-// Nur bauen, wenn die Datei direkt ausgeführt wird (nicht beim Import aus dev.mjs).
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await build(clientOptions);
-  await build(serverOptions);
+if (process.argv.includes("--serve")) {
+  // Entwicklung: baut bei jeder Änderung neu und liefert public/ aus.
+  const ctx = await context({ ...options, minify: false });
+  await ctx.watch();
+  const { port } = await ctx.serve({ servedir: "public", port: 3000 });
+  console.log(`Groschen läuft auf http://localhost:${port}`);
+} else {
+  await build(options);
 }

@@ -1,7 +1,6 @@
-import type { ApiMessage } from "../shared/protocol.ts";
 import { ACHIEVEMENTS, type AchievementId } from "./content.ts";
 
-// Alle Daten bleiben auf dem Gerät (localStorage). Der Server speichert nichts.
+// Alle Daten bleiben auf dem Gerät (localStorage). Es gibt keinen Server.
 
 export interface Progress {
   xp: number;
@@ -11,16 +10,13 @@ export interface Progress {
   dayXp: number;
   done: Record<string, { score: number; at: string }>;
   review: string[];
+  /** Richtige Antworten insgesamt. */
+  correct: number;
   ach: Partial<Record<AchievementId, string>>;
 }
-export interface Conversation {
-  history: ApiMessage[];
-  /** Antworten auf Quizfragen im Chat, je Werkzeugaufruf-ID. */
-  quiz: Record<string, (number | null)[]>;
-}
-export interface Settings { mode: "deep" | "quick"; accessCode: string; tab: string }
+export interface Settings { tab: string }
 
-const KEYS = { progress: "groschen.progress", profile: "groschen.profile", convo: "groschen.conversation", settings: "groschen.settings", device: "groschen.device", calc: "groschen.calc" };
+const KEYS = { progress: "groschen.progress", settings: "groschen.settings", calc: "groschen.calc" };
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -32,37 +28,24 @@ function write(key: string, value: unknown): boolean {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
 }
 
-const freshProgress = (): Progress => ({ xp: 0, streak: 0, lastDay: null, day: null, dayXp: 0, done: {}, review: [], ach: {} });
+const freshProgress = (): Progress => ({ xp: 0, streak: 0, lastDay: null, day: null, dayXp: 0, done: {}, review: [], correct: 0, ach: {} });
 
 export const store = {
   progress: read<Progress>(KEYS.progress, freshProgress()),
-  profile: read<Record<string, string>>(KEYS.profile, {}),
-  convo: read<Conversation>(KEYS.convo, { history: [], quiz: {} }),
-  settings: read<Settings>(KEYS.settings, { mode: "deep", accessCode: "", tab: "learn" }),
+  settings: read<Settings>(KEYS.settings, { tab: "learn" }),
   calc: read<Record<string, number>>(KEYS.calc, {}),
 
   saveProgress() { write(KEYS.progress, this.progress); },
-  saveProfile() { write(KEYS.profile, this.profile); },
-  /** Gibt false zurück, wenn der Speicher voll ist (z. B. viele Bilder). */
-  saveConvo(): boolean { return write(KEYS.convo, this.convo); },
   saveSettings() { write(KEYS.settings, this.settings); },
   saveCalc() { write(KEYS.calc, this.calc); },
-
-  deviceId(): string {
-    try {
-      let id = localStorage.getItem(KEYS.device);
-      if (!id) { id = crypto.randomUUID(); localStorage.setItem(KEYS.device, id); }
-      return id;
-    } catch { return "temp-" + Math.random().toString(36).slice(2, 12); }
-  },
 
   /** Löscht alle Daten der App auf diesem Gerät. */
   wipe() {
     for (const k of Object.values(KEYS)) { try { localStorage.removeItem(k); } catch { /* egal */ } }
     this.progress = freshProgress();
-    this.profile = {};
-    this.convo = { history: [], quiz: {} };
-    this.settings = { mode: "deep", accessCode: "", tab: "learn" };
+    // Alte Daten früherer Versionen mit Coach ebenfalls entfernen.
+    for (const k of ["groschen.profile", "groschen.conversation", "groschen.device"]) { try { localStorage.removeItem(k); } catch { /* egal */ } }
+    this.settings = { tab: "learn" };
     this.calc = {};
   },
 };

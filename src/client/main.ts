@@ -1,15 +1,13 @@
 import { redrawCharts } from "./chart.ts";
-import { initCoach, renderCoach } from "./coach-view.ts";
 import { DAILY_GOAL } from "./content.ts";
 import { closePlayer, initLearn, inPlayer, renderLearn, renderReview } from "./learn.ts";
 import { liveStreak, onNotify, store, today, todayXp } from "./store.ts";
 import { renderTools } from "./tools-view.ts";
 import { $, $$, toast } from "./ui.ts";
 
-const TABS = ["learn", "tools", "review", "coach", "more"] as const;
+const TABS = ["learn", "tools", "review", "more"] as const;
 type Tab = (typeof TABS)[number];
 let tab: Tab = "learn";
-let coachPrefill: string | undefined;
 
 function renderStats() {
   const p = store.progress;
@@ -33,7 +31,6 @@ function render() {
   if (tab === "learn") renderLearn(m);
   else if (tab === "tools") renderTools(m);
   else if (tab === "review") renderReview(m);
-  else if (tab === "coach") { renderCoach(m, coachPrefill); coachPrefill = undefined; }
   else renderMore(m);
 }
 
@@ -52,17 +49,17 @@ function renderMore(m: HTMLElement) {
     <div class="section-title"><h2>Mehr</h2></div>
     <div class="panel stack">
       <h3>Deine Daten</h3>
-      <p class="muted">Lernfortschritt, Profil und Gespräche speichert Groschen nur auf diesem Gerät. Fragen an den Coach werden über unseren Server an Claude (Anthropic) gesendet. Unser Server speichert die Inhalte nicht. Details stehen in der Datenschutzerklärung.</p>
+      <p class="muted">Groschen speichert deinen Lernfortschritt und deine Rechner-Eingaben nur auf diesem Gerät. Es gibt keine Anmeldung, keine Cookies und kein Tracking.</p>
       <div class="row-actions"><button class="btn ghost" id="wipe">Alle Daten auf diesem Gerät löschen</button></div>
       <div id="wipeConfirm" hidden class="confirm">
-        <p>Wirklich alles löschen? Lernfortschritt, Profil und Gespräche sind danach weg.</p>
+        <p>Wirklich alles löschen? Dein Lernfortschritt ist danach weg.</p>
         <div class="row-actions"><button class="btn danger" id="wipeYes">Ja, löschen</button><button class="btn ghost" id="wipeNo">Abbrechen</button></div>
       </div>
     </div>
     <div class="panel stack">
       <h3>Über Groschen</h3>
-      <p class="muted">Groschen vermittelt Finanzwissen für Deutschland. Inhalte und Coach dienen der allgemeinen Information und ersetzen keine individuelle Anlage-, Steuer- oder Rechtsberatung.</p>
-      <p><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/nutzungsbedingungen">Nutzungsbedingungen</a></p>
+      <p class="muted">Groschen vermittelt Finanzwissen für Deutschland. Die Inhalte dienen der allgemeinen Information und ersetzen keine individuelle Anlage-, Steuer- oder Rechtsberatung.</p>
+      <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a> · <a href="nutzungsbedingungen.html">Nutzungsbedingungen</a></p>
     </div>`;
   $("#wipe", m).addEventListener("click", () => { $("#wipeConfirm", m).hidden = false; });
   $("#wipeNo", m).addEventListener("click", () => { $("#wipeConfirm", m).hidden = true; });
@@ -70,12 +67,7 @@ function renderMore(m: HTMLElement) {
 }
 
 onNotify(toast);
-initLearn({
-  rerender: render,
-  stats: renderStats,
-  askCoach: q => { coachPrefill = q; location.hash = "coach"; },
-});
-initCoach(renderStats);
+initLearn({ rerender: render, stats: renderStats });
 
 $$("[data-tab]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); location.hash = b.dataset.tab!; }));
 window.addEventListener("hashchange", () => go(location.hash.slice(1)));
@@ -85,5 +77,5 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 go(location.hash.slice(1) || store.settings.tab || "learn");
 
 if ("serviceWorker" in navigator && location.protocol === "https:") {
-  navigator.serviceWorker.register("/sw.js").catch(() => { /* App funktioniert auch ohne */ });
+  navigator.serviceWorker.register("sw.js").catch(() => { /* App funktioniert auch ohne */ });
 }

@@ -144,7 +144,7 @@ export const ACHIEVEMENTS = [
   { id: "xp500", name: "500 XP" },
   { id: "calc", name: "Selbst gerechnet" },
   { id: "review", name: "Fehler ausgebügelt" },
-  { id: "coach", name: "Frage gestellt" },
+  { id: "correct50", name: "50 richtige Antworten" },
   { id: "all", name: "Alle Lektionen" },
 ] as const;
 export type AchievementId = (typeof ACHIEVEMENTS)[number]["id"];

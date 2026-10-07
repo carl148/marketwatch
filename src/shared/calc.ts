@@ -1,6 +1,5 @@
-// Finanzrechner, die Server (als Werkzeuge für den Coach) und App (für Karten
-// und den Rechner-Tab) gemeinsam nutzen. Alle Eingaben kommen potenziell vom
-// Modell oder aus Formularen und werden deshalb hier begrenzt.
+// Finanzrechner für den Rechner-Tab. Eingaben kommen aus Formularen und
+// werden deshalb hier begrenzt.
 
 export function num(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
@@ -184,26 +183,6 @@ export function notgroschen(ausgaben: number, monate: number, vorhanden: number,
   const ziel = Math.max(0, ausgaben) * clamp(monate, 1, 12);
   const fehlt = Math.max(0, ziel - Math.max(0, vorhanden));
   return { ziel: Math.round(ziel), monate_bis_ziel: sparrate > 0 ? Math.ceil(fehlt / sparrate) : null };
-}
-
-// ---- Quiz (vom Coach erzeugt) ----
-export interface QuizFrage { frage: string; antworten: string[]; richtig: number; erklaerung: string }
-export interface Quiz { thema: string; fragen: QuizFrage[] }
-
-/** Prüft und kürzt ein vom Modell geliefertes Quiz. Gibt null zurück, wenn keine gültige Frage übrig bleibt. */
-export function sanitizeQuiz(raw: Record<string, unknown>): Quiz | null {
-  const list = Array.isArray(raw.fragen) ? raw.fragen : [];
-  const fragen: QuizFrage[] = [];
-  for (const q of list.slice(0, 6)) {
-    if (!q || typeof q !== "object") continue;
-    const o = q as Record<string, unknown>;
-    const antworten = Array.isArray(o.antworten) ? o.antworten.slice(0, 5).map(a => String(a).slice(0, 200)) : [];
-    const richtig = typeof o.richtig === "number" ? o.richtig : num(o.richtig);
-    if (antworten.length < 2 || richtig === null || !Number.isInteger(richtig) || richtig < 0 || richtig >= antworten.length) continue;
-    fragen.push({ frage: String(o.frage ?? "").slice(0, 300), antworten, richtig, erklaerung: String(o.erklaerung ?? "").slice(0, 400) });
-  }
-  if (!fragen.length) return null;
-  return { thema: String(raw.thema ?? "Quiz").slice(0, 80), fragen };
 }
 
 // ---- Formatierung ----

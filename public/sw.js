@@ -1,7 +1,7 @@
-// Service Worker: hält die App-Dateien offline verfügbar. Lektionen und Rechner
-// funktionieren damit ohne Netz; der Coach braucht immer eine Verbindung.
-const CACHE = "groschen-v1";
-const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/icon.svg", "/manifest.webmanifest"];
+// Service Worker: hält alle App-Dateien offline verfügbar.
+// Bei Änderungen an der App die Versionsnummer erhöhen.
+const CACHE = "groschen-v2";
+const ASSETS = ["./", "index.html", "styles.css", "app.js", "icon.svg", "icon-192.png", "manifest.webmanifest", "impressum.html", "datenschutz.html", "nutzungsbedingungen.html"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -12,15 +12,14 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
-  // Netz zuerst, damit Updates sofort ankommen; ohne Netz aus dem Cache.
+  if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  // Netz zuerst, damit Updates sofort ankommen; ohne Netz aus dem Zwischenspeicher.
   e.respondWith(
     fetch(e.request)
       .then(res => {
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
         return res;
       })
-      .catch(() => caches.match(e.request).then(r => r || caches.match("/index.html")))
+      .catch(() => caches.match(e.request).then(r => r || caches.match("index.html")))
   );
 });
