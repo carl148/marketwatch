@@ -37,6 +37,8 @@ export function visibleStreak(s: StreakState, today: string): number {
 export interface DailyCounters {
   day: string;
   lessons: number;
+  /** Erstmals abgeschlossene Lektionen heute (für das Tageslimit). */
+  newLessons: number;
   correct: number;
   perfect: number;
   combo: number;
@@ -44,7 +46,7 @@ export interface DailyCounters {
   calc: number;
   claimed: string[];
 }
-export const freshDaily = (day: string): DailyCounters => ({ day, lessons: 0, correct: 0, perfect: 0, combo: 0, comboNow: 0, calc: 0, claimed: [] });
+export const freshDaily = (day: string): DailyCounters => ({ day, lessons: 0, newLessons: 0, correct: 0, perfect: 0, combo: 0, comboNow: 0, calc: 0, claimed: [] });
 
 type Metric = "lessons" | "correct" | "perfect" | "combo" | "calc" | "xp";
 export interface Challenge { id: string; text: string; metric: Metric; target: number; coins: number }
@@ -80,6 +82,25 @@ export function challengesFor(day: string): Challenge[] {
 
 export function challengeValue(c: Challenge, d: DailyCounters, dayXp: number): number {
   return c.metric === "xp" ? dayXp : d[c.metric];
+}
+
+// ---- Lerntempo und Auffrischen ----
+
+/** Neue Lektionen pro Tag. Wiederholen, Auffrischen und Üben sind unbegrenzt. */
+export const NEW_LESSONS_PER_DAY = 3;
+
+/** Abstände in Tagen, nach denen eine Lektion wieder zum Auffrischen kommt. */
+export const REFRESH_DAYS = [1, 3, 7, 14, 30, 60];
+
+export function addDays(day: string, n: number): string {
+  const d = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10) + n));
+  return d.toISOString().slice(0, 10);
+}
+
+/** Nächste Stufe nach dem Auffrischen: bestanden geht es weiter, sonst beginnt der Abstand von vorn. */
+export function nextRefresh(stage: number, passed: boolean, today: string): { stage: number; due: string } {
+  const next = passed ? Math.min(stage + 1, REFRESH_DAYS.length - 1) : 0;
+  return { stage: next, due: addDays(today, REFRESH_DAYS[next]) };
 }
 
 // ---- Shop ----

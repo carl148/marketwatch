@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS, type AchievementId } from "./content.ts";
-import { applyStreak, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
+import { addDays, applyStreak, dayDiff, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
 
 // Alle Daten bleiben auf dem Gerät (localStorage). Es gibt keinen Server.
 
@@ -17,7 +17,8 @@ export interface Progress {
   lastDay: string | null;
   day: string | null;
   dayXp: number;
-  done: Record<string, { score: number; at: string }>;
+  /** Abgeschlossene Lektionen mit Stufe und Termin fürs Auffrischen. */
+  done: Record<string, { score: number; at: string; stage?: number; due?: string }>;
   review: string[];
   /** Richtige Antworten insgesamt. */
   correct: number;
@@ -158,4 +159,14 @@ export function applyLook() {
   const root = document.documentElement;
   if (theme === "system") delete root.dataset.theme; else root.dataset.theme = theme;
   root.dataset.accent = accent;
+}
+
+/** Lektionen, die heute zum Auffrischen dran sind, die ältesten zuerst. */
+export function dueLessons(): string[] {
+  const t = today();
+  return Object.entries(store.progress.done)
+    .map(([id, d]) => ({ id, due: d.due ?? addDays(d.at, 1) }))
+    .filter(x => dayDiff(x.due, t) >= 0)
+    .sort((a, b) => a.due.localeCompare(b.due))
+    .map(x => x.id);
 }

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ACHIEVEMENTS, ALL_LESSONS, UNITS } from "../src/client/content.ts";
 
-test("40 Lektionen mit eindeutigen IDs", () => {
-  assert.equal(ALL_LESSONS.length, 40);
+test("100 Lektionen mit eindeutigen IDs", () => {
+  assert.equal(ALL_LESSONS.length, 100);
   const ids = ALL_LESSONS.map(l => l.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(UNITS.map(u => u.id)).size, UNITS.length);

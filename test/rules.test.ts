@@ -59,3 +59,14 @@ test("Challenge-Fortschritt liest Tageszähler und Tages-XP", () => {
   assert.equal(challengeValue({ id: "c", text: "", metric: "correct", target: 5, coins: 1 }, d, 0), 7);
   assert.equal(challengeValue({ id: "g", text: "", metric: "xp", target: 30, coins: 1 }, d, 42), 42);
 });
+
+test("Auffrischen: Abstände wachsen, Fehler setzen zurück", async () => {
+  const { addDays, nextRefresh, REFRESH_DAYS } = await import("../src/client/rules.ts");
+  assert.equal(addDays("2026-12-30", 3), "2027-01-02");
+  assert.equal(addDays("2026-03-28", 2), "2026-03-30");
+  assert.deepEqual(nextRefresh(-1, true, "2026-10-08"), { stage: 0, due: "2026-10-09" });
+  assert.deepEqual(nextRefresh(0, true, "2026-10-09"), { stage: 1, due: "2026-10-12" });
+  assert.deepEqual(nextRefresh(3, false, "2026-10-09"), { stage: 0, due: "2026-10-10" });
+  const last = REFRESH_DAYS.length - 1;
+  assert.equal(nextRefresh(last, true, "2026-10-09").stage, last);
+});

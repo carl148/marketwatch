@@ -10,12 +10,14 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 
 | Bereich | Funktionen |
 |---|---|
-| **Lernen** | 10 Kapitel mit 40 Lektionen: Budget & Konto, Sparen, Geld im Alltag, Kredite & Schulden, Zinseszins, Investieren, Steuern, Vorsorge, Wirtschaft, Betrug & Krypto. Lernkarten, Quiz mit gemischten Antworten, XP, Level und Ränge, Tagesziel |
+| **Lernen** | 20 Kapitel mit 100 Lektionen, von Budget, Sparen und Alltag über Investieren, Steuern, Versicherungen und Vorsorge bis zu Familie, Immobilien, Wirtschaft, Nachhaltigkeit und Betrug. Lernkarten, Quiz mit gemischten Antworten, XP, Level und Ränge, Tagesziel |
+| **Lerntempo** | 3 neue Lektionen pro Tag (einstellbar in `src/client/rules.ts`). Bereits geschaffte Lektionen lassen sich jederzeit wiederholen. So reichen die Inhalte für mehr als einen Monat |
+| **Auffrischen** | Fertige Lektionen kommen nach 1, 3, 7, 14, 30 und 60 Tagen zum Auffrischen wieder. Wer Fehler macht, beginnt die Abstände von vorn |
 | **Tages-Challenges** | Jeden Tag drei neue Aufgaben (z. B. „Beantworte 10 Fragen richtig“), die Münzen bringen |
 | **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
 | **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
 | **Profil** | Name, Avatar, Akzentfarbe, Hell- oder Dunkelmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
-| **Erfolge** | 13 Erfolge zum Freischalten |
+| **Erfolge** | 16 Erfolge zum Freischalten |
 | **Rechner** | Sparplan mit Diagramm (inkl. Kosten und Inflation), 50/30/20-Budget, Notgroschen, Kredit, Steuer auf Kapitalerträge |
 | **Üben** | Falsch beantwortete Fragen kommen in einen Stapel, bis sie sitzen |
 
@@ -87,7 +89,7 @@ src/
   client/tools-view.ts Rechner-Bereich
   client/chart.ts     Sparplan-Diagramm
   client/store.ts     Speicher im Browser, XP, Münzen, Erfolge
-  client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Shop
+  client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Lerntempo, Auffrischen, Shop
   client/profile-view.ts Profil, Statistik, Kalender, Shop
   client/ui.ts        Hilfsfunktionen
 public/               HTML, CSS, Icons, Manifest, Service Worker, Rechtstexte

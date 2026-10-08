@@ -1,6 +1,6 @@
 import { ACHIEVEMENTS, ALL_LESSONS, DAILY_GOAL, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
-import { challengeValue, challengesFor } from "./rules.ts";
-import { addCoins, addXp, bump, daily, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
+import { NEW_LESSONS_PER_DAY, challengeValue, challengesFor, nextRefresh } from "./rules.ts";
+import { addCoins, addXp, bump, daily, dueLessons, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
 import { $, $$, esc } from "./ui.ts";
 
 // Lernpfad, Lektionen mit Quiz und der Wiederholen-Stapel.
@@ -15,7 +15,7 @@ function shuffled(n: number): number[] {
 }
 const qStep = (id: string): Step => ({ type: "q", q: QUESTION_BY_ID[id], order: shuffled(QUESTION_BY_ID[id].a.length) });
 interface Player {
-  mode: "lesson" | "review";
+  mode: "lesson" | "review" | "refresh";
   lesson?: LessonWithUnit;
   steps: Step[];
   i: number;
@@ -25,6 +25,9 @@ interface Player {
   coins: number;
   answered: number | null;
   finished: boolean;
+  /** Beim Auffrischen: welche Lektionen dran sind und wie viele Fragen je Lektion richtig waren. */
+  refreshIds?: string[];
+  perLesson?: Record<string, number>;
 }
 
 let player: Player | null = null;
@@ -33,49 +36,85 @@ export function initLearn(h: typeof hooks) { hooks = h; }
 export const inPlayer = () => player !== null;
 export function closePlayer() { player = null; }
 
-const isUnlocked = (l: LessonWithUnit) => {
+/** Vorherige Lektion im Kapitel geschafft? */
+const pathOpen = (l: LessonWithUnit) => {
   const idx = l.unit.lessons.findIndex(x => x.id === l.id);
   return idx === 0 || !!store.progress.done[l.unit.lessons[idx - 1].id];
 };
-const nextLesson = () => ALL_LESSONS.find(l => !store.progress.done[l.id] && isUnlocked(l));
+const newLeft = () => Math.max(0, NEW_LESSONS_PER_DAY - daily().newLessons);
+/** Spielbar: schon geschafft (Wiederholen geht immer) oder Weg frei und heute noch neue Lektionen übrig. */
+const isUnlocked = (l: LessonWithUnit) => !!store.progress.done[l.id] || (pathOpen(l) && newLeft() > 0);
+const nextLesson = () => ALL_LESSONS.find(l => !store.progress.done[l.id] && pathOpen(l));
+
+/** Kapitel, die der Nutzer auf- oder zugeklappt hat (nur für diese Sitzung). */
+const toggled = new Map<string, boolean>();
 
 export function renderLearn(m: HTMLElement) {
   if (player) return renderPlayer(m);
   const p = store.progress;
   const lvl = levelOf(p.xp), a = levelStart(lvl), b = levelStart(lvl + 1);
   const nx = nextLesson();
+  const left = newLeft();
+  const due = dueLessons();
   const doneCount = Object.keys(p.done).length;
+  const heroTitle = !nx ? "Alle Lektionen geschafft" : left > 0 ? "Weiter mit: " + esc(nx.title) : "Für heute alle neuen Lektionen geschafft";
+  const heroText = !nx ? "Halte dein Wissen mit Auffrischen und Üben frisch."
+    : left > 0 ? `${esc(nx.unit.title)} · etwa ${nx.mins} Minuten`
+    : `Morgen warten ${NEW_LESSONS_PER_DAY} neue Lektionen. Bis dahin kannst du auffrischen, üben oder Lektionen wiederholen.`;
   m.innerHTML = `
     <section class="hero">
       <div>
-        <span class="eyebrow on-dark">${doneCount} von ${ALL_LESSONS.length} Lektionen</span>
-        <h2>${nx ? "Weiter mit: " + esc(nx.title) : "Alle Lektionen geschafft"}</h2>
-        <p>${nx ? `${esc(nx.unit.title)} · etwa ${nx.mins} Minuten` : "Halte dein Wissen im Üben-Tab frisch oder probier die Rechner aus."}</p>
-        ${nx ? `<button class="btn" id="continueBtn">Lektion starten</button>` : ""}
+        <span class="eyebrow on-dark">${doneCount} von ${ALL_LESSONS.length} Lektionen · heute noch ${left} neue</span>
+        <h2>${heroTitle}</h2>
+        <p>${heroText}</p>
+        <div class="row-actions hero-actions">
+          ${nx && left > 0 ? `<button class="btn" id="continueBtn">Lektion starten</button>` : ""}
+          ${due.length ? `<button class="btn ${nx && left > 0 ? "ghost-dark" : ""}" id="refreshBtn">${due.length} ${due.length === 1 ? "Lektion" : "Lektionen"} auffrischen</button>` : ""}
+        </div>
       </div>
       <div class="lvl"><span class="eyebrow on-dark">Level</span><b>${lvl}</b><span class="num small">${p.xp - a} / ${b - a} XP</span></div>
       <div class="lvl-bar"><i style="width:${((p.xp - a) / (b - a)) * 100}%"></i></div>
     </section>
     ${challengesHtml()}
+    <div class="section-title"><h2>Lernpfad</h2><span class="eyebrow">${UNITS.length} Kapitel</span></div>
     <div class="units">${UNITS.map((u, ui) => {
       const d = u.lessons.filter(l => p.done[l.id]).length;
-      return `<section class="unit">
-        <div class="unit-head"><div><span class="eyebrow">Kapitel ${ui + 1}</span><h3>${esc(u.title)}</h3></div><span>${esc(u.sub)} · ${d}/${u.lessons.length}</span></div>
+      const hasNext = u.lessons.some(l => l.id === nx?.id);
+      const open = toggled.get(u.id) ?? hasNext;
+      return `<details class="unit" data-unit="${u.id}" ${open ? "open" : ""}>
+        <summary class="unit-head">
+          <div><span class="eyebrow">Kapitel ${ui + 1}${d === u.lessons.length ? " · geschafft" : ""}</span><h3>${esc(u.title)}</h3></div>
+          <div class="unit-meta"><span>${esc(u.sub)}</span><span class="unit-prog"><i style="width:${(d / u.lessons.length) * 100}%"></i></span><span class="num">${d}/${u.lessons.length}</span></div>
+        </summary>
         <div class="lessons">${u.lessons.map((l0, li) => {
           const l = ALL_LESSONS.find(x => x.id === l0.id)!;
-          const done = p.done[l.id], open = isUnlocked(l), isNext = nx?.id === l.id;
-          return `<button class="lesson ${done ? "done" : ""} ${isNext ? "next" : ""}" data-lesson="${l.id}" ${open ? "" : "disabled"}>
+          const done = p.done[l.id], playable = isUnlocked(l), isNext = nx?.id === l.id;
+          const note = done ? `${done.score}/${l.qs.length} richtig` : playable ? `${l.mins} Min · ${l.qs.length} Fragen` : pathOpen(l) ? "Morgen verfügbar" : "Erst vorherige Lektion";
+          return `<button class="lesson ${done ? "done" : ""} ${isNext ? "next" : ""}" data-lesson="${l.id}" ${playable ? "" : "disabled"}>
             <span class="dot">${done ? "✓" : li + 1}</span>
-            <span><b>${esc(l.title)}</b><small>${done ? `${done.score}/${l.qs.length} richtig` : open ? `${l.mins} Min · ${l.qs.length} Fragen` : "Erst vorherige Lektion"}</small></span>
+            <span><b>${esc(l.title)}</b><small>${note}</small></span>
           </button>`;
         }).join("")}</div>
-      </section>`;
+      </details>`;
     }).join("")}</div>
     <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${ACHIEVEMENTS.filter(x => p.ach[x.id]).length} / ${ACHIEVEMENTS.length}</span></div>
     <div class="ach">${ACHIEVEMENTS.map(x => `<span class="${p.ach[x.id] ? "got" : ""}">${esc(x.name)}</span>`).join("")}</div>`;
   $("#continueBtn", m)?.addEventListener("click", () => nx && startLesson(nx.id));
+  $("#refreshBtn", m)?.addEventListener("click", startRefresh);
   $$("[data-claim]", m).forEach(b => b.addEventListener("click", () => claim(b.dataset.claim!)));
   $$("[data-lesson]", m).forEach(b => b.addEventListener("click", () => startLesson(b.dataset.lesson!)));
+  $$<HTMLDetailsElement>("details[data-unit]", m).forEach(d => d.addEventListener("toggle", () => toggled.set(d.dataset.unit!, d.open)));
+}
+
+/** Auffrischen: Fragen aus bis zu drei fälligen Lektionen, gemischt. */
+function startRefresh() {
+  const ids = dueLessons().slice(0, 3);
+  if (!ids.length) return;
+  const qs = ids.flatMap(id => ALL_LESSONS.find(l => l.id === id)!.qs.map((_, i) => `${id}-${i}`));
+  for (let i = qs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [qs[i], qs[j]] = [qs[j], qs[i]]; }
+  player = { mode: "refresh", refreshIds: ids, steps: qs.map(qStep), i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false, perLesson: {} };
+  hooks.rerender();
+  window.scrollTo(0, 0);
 }
 
 function challengesHtml(): string {
@@ -139,7 +178,7 @@ function renderPlayer(m: HTMLElement) {
     $("#next", m).focus();
   } else {
     const q = s.q, ans = p.answered;
-    m.innerHTML = `<div class="player">${head}<article class="card"><span class="eyebrow">${p.mode === "review" ? "Wiederholung · " + esc(q.lesson.title) : "Frage"}</span><h2>${esc(q.q)}</h2>
+    m.innerHTML = `<div class="player">${head}<article class="card"><span class="eyebrow">${p.mode === "review" ? "Wiederholung · " + esc(q.lesson.title) : p.mode === "refresh" ? "Auffrischen · " + esc(q.lesson.title) : "Frage"}</span><h2>${esc(q.q)}</h2>
       <div class="opts">${s.order.map(i => {
         const t = q.a[i];
         let cls = "";
@@ -164,6 +203,7 @@ function answer(i: number) {
   p.answered = i;
   const prog = store.progress;
   recordAnswer(i === q.c);
+  if (i === q.c && p.perLesson) p.perLesson[q.lesson.id] = (p.perLesson[q.lesson.id] ?? 0) + 1;
   if (i === q.c) {
     p.correct++;
     p.xp += 10;
@@ -188,10 +228,26 @@ function renderResult(m: HTMLElement) {
       p.coins = (prev ? 3 : 10) + (perfect ? 5 : 0);
       bump("lessons");
       if (perfect) { unlock("perfect"); bump("perfect"); }
-      prog.done[p.lesson.id] = { score: Math.max(p.correct, prev?.score ?? 0), at: new Date().toISOString().slice(0, 10) };
+      const first = nextRefresh(-1, true, today());
+      prog.done[p.lesson.id] = prev ? { ...prev, score: Math.max(p.correct, prev.score) } : { score: p.correct, at: today(), stage: first.stage, due: first.due };
+      if (!prev) daily().newLessons++;
+      const n = Object.keys(prog.done).length;
+      if (n >= 25) unlock("lessons25");
+      if (n >= 50) unlock("lessons50");
       unlock("first");
       if (p.lesson.unit.lessons.every(l => prog.done[l.id])) unlock("unit");
       if (ALL_LESSONS.every(l => prog.done[l.id])) unlock("all");
+      addXp(p.bonus);
+    } else if (p.mode === "refresh" && p.refreshIds) {
+      for (const id of p.refreshIds) {
+        const d = prog.done[id];
+        const l = ALL_LESSONS.find(x => x.id === id)!;
+        const passed = (p.perLesson?.[id] ?? 0) >= Math.ceil(l.qs.length * 2 / 3);
+        Object.assign(d, nextRefresh(d.stage ?? 0, passed, today()));
+      }
+      p.bonus = 5;
+      p.coins = 3 * p.refreshIds.length;
+      unlock("refresh1");
       addXp(p.bonus);
     } else if (p.correct > 0) { unlock("review"); p.coins = 5; }
     if (p.coins) addCoins(p.coins);
@@ -199,7 +255,7 @@ function renderResult(m: HTMLElement) {
   }
   const nx = nextLesson();
   m.innerHTML = `<div class="player"><article class="card result">
-    <span class="eyebrow">${p.mode === "lesson" ? "Lektion abgeschlossen" : "Wiederholung beendet"}</span>
+    <span class="eyebrow">${p.mode === "lesson" ? "Lektion abgeschlossen" : p.mode === "refresh" ? "Auffrischen beendet" : "Wiederholung beendet"}</span>
     <h2>${perfect ? "Fehlerfrei!" : p.correct >= qn / 2 ? "Gut gemacht!" : "Dranbleiben lohnt sich"}</h2>
     <div class="big num pop">+${p.xp + p.bonus} XP</div>
     ${p.coins ? `<p class="coins-won">+${p.coins} Münzen</p>` : ""}
@@ -211,7 +267,7 @@ function renderResult(m: HTMLElement) {
     ${todayXp() >= DAILY_GOAL ? `<p class="good-text">Tagesziel erreicht.</p>` : ""}
   </article>
   <div class="actions">
-    ${p.mode === "lesson" && nx ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn" id="goNext">Nächste Lektion</button>` : `<button class="btn" id="toPath">Fertig</button>`}
+    ${p.mode === "lesson" && nx && isUnlocked(nx) ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn" id="goNext">Nächste Lektion</button>` : `<button class="btn" id="toPath">Fertig</button>`}
   </div></div>`;
   $("#toPath", m).addEventListener("click", () => { player = null; hooks.rerender(); });
   $("#goNext", m)?.addEventListener("click", () => startLesson(nx!.id));

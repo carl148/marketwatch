@@ -126,9 +126,22 @@ main { padding-top: 20px; min-height: 60vh; }
 .hero .lvl b { font-family: var(--display); font-size: 40px; line-height: 1; display: block; }
 .lvl-bar { height: 6px; background: color-mix(in srgb, var(--bg) 20%, transparent); border-radius: 99px; overflow: hidden; grid-column: 1 / -1; }
 .lvl-bar i { display: block; height: 100%; background: var(--coin); }
-.units { display: grid; gap: 14px; }
+.units { display: grid; gap: 10px; }
+details.unit > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; }
+details.unit > summary > div:first-child { grid-column: 1; grid-row: 1; min-width: 0; }
+details.unit > summary::-webkit-details-marker { display: none; }
+details.unit > summary::after { content: "+"; grid-column: 2; grid-row: 1; font-family: var(--display); font-size: 22px; color: var(--muted); line-height: 1; }
+details.unit[open] > summary::after { content: "–"; }
+details.unit:not([open]) { padding-block: 12px; }
+.unit-meta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; min-width: 0; }
+.unit-meta > span:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unit-prog { flex: 1 1 60px; max-width: 220px; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: inline-block; margin-left: auto; }
+.unit-prog i { display: block; height: 100%; background: var(--accent); }
+.hero-actions { margin-top: 12px; }
+.hero .btn { margin-top: 0; }
+.btn.ghost-dark { background: color-mix(in srgb, var(--bg) 18%, transparent); color: inherit; }
 .unit { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
-.unit-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.unit-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
 .unit-head h3 { font-size: 18px; }
 .unit-head > span { color: var(--muted); font-size: 13px; }
 .lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; }
