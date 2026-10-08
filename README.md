@@ -10,10 +10,16 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 
 | Bereich | Funktionen |
 |---|---|
-| **Lernen** | 6 Kapitel, 12 Lektionen mit Lernkarten und Quiz, XP, Level, Lernserie, Tagesziel, 10 Erfolge |
+| **Lernen** | 7 Kapitel mit 14 Lektionen (Budget, Sparen, Zinseszins, Investieren, Steuern, Vorsorge, Wirtschaft), Lernkarten und Quiz, XP, Level und Ränge, Tagesziel |
+| **Tages-Challenges** | Jeden Tag drei neue Aufgaben (z. B. „Beantworte 10 Fragen richtig“), die Münzen bringen |
+| **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
+| **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
+| **Profil** | Name, Avatar, Akzentfarbe, Hell- oder Dunkelmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
+| **Erfolge** | 13 Erfolge zum Freischalten |
 | **Rechner** | Sparplan mit Diagramm (inkl. Kosten und Inflation), 50/30/20-Budget, Notgroschen, Kredit, Steuer auf Kapitalerträge |
 | **Üben** | Falsch beantwortete Fragen kommen in einen Stapel, bis sie sitzen |
-| **Mehr** | Alle Daten auf dem Gerät löschen, Impressum, Datenschutz, Nutzungsbedingungen |
+
+Alles ist kostenlos und ohne Werbung. Ein Premium-Abo wie im Original gibt es bewusst nicht, weil dafür Bezahlsysteme und Nutzerkonten nötig wären.
 
 Datenschutz: Der Fortschritt bleibt im Browser des Geräts. Keine Cookies, kein Tracking, keine externen Schriftarten oder Skripte.
 
@@ -32,7 +38,7 @@ npm run dev        # öffnet sich unter http://localhost:3000
 |---|---|
 | `npm run dev` | Entwicklungsmodus, baut bei jeder Änderung neu |
 | `npm run build` | Baut `public/app.js`. Danach ist der Ordner `public/` die fertige Website |
-| `npm test` | Prüft die Rechner |
+| `npm test` | Prüft Rechner und Spielregeln |
 | `npm run check` | Typen, Tests und Build in einem |
 | `npm run icons` | Erzeugt die PNG-Icons neu |
 
@@ -80,9 +86,11 @@ src/
   client/learn.ts     Lernpfad, Lektionen, Üben
   client/tools-view.ts Rechner-Bereich
   client/chart.ts     Sparplan-Diagramm
-  client/store.ts     Speicher im Browser, XP, Lernserie, Erfolge
+  client/store.ts     Speicher im Browser, XP, Münzen, Erfolge
+  client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Shop
+  client/profile-view.ts Profil, Statistik, Kalender, Shop
   client/ui.ts        Hilfsfunktionen
 public/               HTML, CSS, Icons, Manifest, Service Worker, Rechtstexte
 scripts/              Build und Icon-Erzeugung
-test/                 Tests der Rechner
+test/                 Tests der Rechner und Spielregeln
 ```

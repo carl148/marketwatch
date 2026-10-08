@@ -1,6 +1,6 @@
 import { budget, eur, kapitalertragsteuer, kredit, notgroschen, num, pct, sparplan } from "../shared/calc.ts";
 import { drawSparplan } from "./chart.ts";
-import { store, unlock } from "./store.ts";
+import { bump, store, unlock } from "./store.ts";
 import { $, $$, esc } from "./ui.ts";
 
 // Rechner-Tab: Finanzrechner mit eigenen Zahlen.
@@ -62,6 +62,7 @@ export function renderTools(m: HTMLElement) {
     store.calc[inp.dataset.k!] = n;
     store.saveCalc();
     unlock("calc");
+    bump("calc");
     update(m);
   }));
   update(m);

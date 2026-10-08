@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Fintelify</title>
-  <meta name="description" content="Finanzwissen für Deutschland: kurze Lektionen, Quiz und Rechner.">
+  <meta name="description" content="Finanzwissen für Deutschland: tägliche Lektionen, Quiz, Challenges und Rechner.">
   <meta name="theme-color" content="#1b7a52">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
@@ -25,8 +25,12 @@
             <span class="num" id="streakNum">0</span><span class="sr-only">Tage Lernserie</span>
           </div>
           <div class="stat xp" title="Erfahrungspunkte">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor"/><circle class="xp-ring" cx="12" cy="12" r="5.5" fill="none" stroke-width="1.5"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.6z"/></svg>
             <span class="num" id="xpNum">0</span><span class="sr-only">XP</span>
+          </div>
+          <div class="stat coins" title="Münzen">
+            <span class="coin-sm" aria-hidden="true"></span>
+            <span class="num" id="coinNum">0</span><span class="sr-only">Münzen</span>
           </div>
           <div class="stat goal" title="Tagesziel">
             <span class="muted small">Heute</span>
@@ -39,7 +43,7 @@
         <a href="#learn" data-tab="learn">Lernen</a>
         <a href="#tools" data-tab="tools">Rechner</a>
         <a href="#review" data-tab="review"><span class="lg">Wiederholen</span><span class="sm">Üben</span> <span class="badge" id="reviewBadge" hidden>0</span></a>
-        <a href="#more" data-tab="more">Mehr</a>
+        <a href="#profile" data-tab="profile">Profil</a>
       </nav>
     </header>
     <main id="main"><noscript>Fintelify braucht JavaScript.</noscript></main>

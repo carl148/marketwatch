@@ -127,6 +127,26 @@ export const UNITS: Unit[] = [
       { q: "Welche Versicherung ist in Deutschland Pflicht?", a: ["Krankenversicherung", "Hausratversicherung", "Berufsunfähigkeitsversicherung", "Rechtsschutz"], c: 0, e: "Eine Krankenversicherung ist für alle in Deutschland verpflichtend." },
     ]},
   ]},
+  { id: "wirtschaft", title: "Wirtschaft verstehen", sub: "Zinsen, Preise, Konjunktur", lessons: [
+    { id: "w1", title: "Der Leitzins", mins: 3, cards: [
+      { h: "Was die EZB steuert", p: "Die Europäische Zentralbank legt die Leitzinsen für den Euroraum fest. Zu diesen Zinsen können sich Banken Geld bei der Zentralbank leihen oder dort parken. Damit beeinflusst sie, wie teuer Geld in der ganzen Wirtschaft ist." },
+      { h: "Steigende Zinsen bremsen", p: "Hebt die EZB die Leitzinsen an, werden Kredite teurer und Sparen lohnt sich mehr. Menschen und Firmen geben weniger aus, die Nachfrage sinkt und die Preise steigen langsamer. So bekämpft die EZB eine hohe Inflation." },
+      { h: "Was das für dich bedeutet", p: "Steigt der Leitzins, steigen meist auch die Zinsen für Tagesgeld, Baukredite und Dispo. Sinkt er, wird Sparen weniger attraktiv und Kredite werden günstiger.", f: "Leitzins hoch: Tagesgeld bringt mehr, Kredite kosten mehr" },
+    ], qs: [
+      { q: "Wer legt die Leitzinsen für den Euroraum fest?", a: ["Die Bundesregierung", "Die Europäische Zentralbank", "Die Sparkassen", "Die BaFin"], c: 1, e: "Die EZB in Frankfurt bestimmt die Geldpolitik für alle Euro-Länder." },
+      { q: "Was will die EZB meist erreichen, wenn sie die Leitzinsen erhöht?", a: ["Mehr Inflation", "Die Inflation senken", "Aktienkurse steigern", "Steuern senken"], c: 1, e: "Höhere Zinsen dämpfen die Nachfrage und damit den Preisanstieg." },
+      { q: "Was passiert oft mit den Tagesgeldzinsen, wenn der Leitzins steigt?", a: ["Sie sinken", "Sie steigen", "Sie bleiben immer gleich", "Tagesgeld wird abgeschafft"], c: 1, e: "Banken geben höhere Leitzinsen meist teilweise an Sparer weiter." },
+    ]},
+    { id: "w2", title: "Angebot, Nachfrage & Konjunktur", mins: 3, cards: [
+      { h: "Wie Preise entstehen", p: "Wollen viele Menschen etwas kaufen, das knapp ist, steigt der Preis. Gibt es mehr Angebot als Nachfrage, fällt er. Dieses Zusammenspiel bestimmt Preise auf Märkten, von Konzerttickets bis zu Aktien." },
+      { h: "Das Bruttoinlandsprodukt", p: "Das BIP misst den Wert aller Waren und Dienstleistungen, die in einem Land in einem Zeitraum hergestellt werden. Wächst es, spricht man von Wirtschaftswachstum." },
+      { h: "Auf und Ab der Wirtschaft", p: "Die Wirtschaft entwickelt sich in Wellen, der sogenannten Konjunktur. Schrumpft das BIP zwei Quartale hintereinander, spricht man meist von einer Rezession. Dann steigt oft die Arbeitslosigkeit, und Aktienkurse fallen.", f: "Für langfristige Anleger gehören Rezessionen dazu. Ein Notgroschen hilft, sie ohne Notverkäufe zu überstehen." },
+    ], qs: [
+      { q: "Ein Produkt ist knapp und sehr gefragt. Was passiert meist mit dem Preis?", a: ["Er sinkt", "Er steigt", "Er bleibt gleich", "Der Staat legt ihn fest"], c: 1, e: "Hohe Nachfrage bei knappem Angebot treibt den Preis nach oben." },
+      { q: "Was misst das Bruttoinlandsprodukt (BIP)?", a: ["Die Staatsschulden", "Den Wert aller hergestellten Waren und Dienstleistungen", "Die Inflation", "Die Zahl der Arbeitslosen"], c: 1, e: "Das BIP ist das wichtigste Maß für die Wirtschaftsleistung eines Landes." },
+      { q: "Wann spricht man meist von einer Rezession?", a: ["Wenn die Börse an einem Tag fällt", "Wenn das BIP zwei Quartale in Folge schrumpft", "Wenn die Inflation bei 2 % liegt", "Wenn der Leitzins sinkt"], c: 1, e: "Zwei Quartale mit sinkendem BIP gelten als gängige Faustregel für eine Rezession." },
+    ]},
+  ]},
 ];
 
 export const ALL_LESSONS = UNITS.flatMap(u => u.lessons.map(l => ({ ...l, unit: u })));
@@ -145,6 +165,9 @@ export const ACHIEVEMENTS = [
   { id: "calc", name: "Selbst gerechnet" },
   { id: "review", name: "Fehler ausgebügelt" },
   { id: "correct50", name: "50 richtige Antworten" },
+  { id: "challenge1", name: "Erste Tages-Challenge" },
+  { id: "freeze", name: "Serie gerettet" },
+  { id: "profile", name: "Profil eingerichtet" },
   { id: "all", name: "Alle Lektionen" },
 ] as const;
 export type AchievementId = (typeof ACHIEVEMENTS)[number]["id"];

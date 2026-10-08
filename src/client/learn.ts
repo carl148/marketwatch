@@ -1,5 +1,6 @@
 import { ACHIEVEMENTS, ALL_LESSONS, DAILY_GOAL, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
-import { addXp, levelOf, levelStart, liveStreak, store, todayXp, unlock } from "./store.ts";
+import { challengeValue, challengesFor } from "./rules.ts";
+import { addCoins, addXp, bump, daily, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
 import { $, $$, esc } from "./ui.ts";
 
 // Lernpfad, Lektionen mit Quiz und der Wiederholen-Stapel.
@@ -13,6 +14,7 @@ interface Player {
   correct: number;
   xp: number;
   bonus: number;
+  coins: number;
   answered: number | null;
   finished: boolean;
 }
@@ -46,6 +48,7 @@ export function renderLearn(m: HTMLElement) {
       <div class="lvl"><span class="eyebrow on-dark">Level</span><b>${lvl}</b><span class="num small">${p.xp - a} / ${b - a} XP</span></div>
       <div class="lvl-bar"><i style="width:${((p.xp - a) / (b - a)) * 100}%"></i></div>
     </section>
+    ${challengesHtml()}
     <div class="units">${UNITS.map((u, ui) => {
       const d = u.lessons.filter(l => p.done[l.id]).length;
       return `<section class="unit">
@@ -63,7 +66,37 @@ export function renderLearn(m: HTMLElement) {
     <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${ACHIEVEMENTS.filter(x => p.ach[x.id]).length} / ${ACHIEVEMENTS.length}</span></div>
     <div class="ach">${ACHIEVEMENTS.map(x => `<span class="${p.ach[x.id] ? "got" : ""}">${esc(x.name)}</span>`).join("")}</div>`;
   $("#continueBtn", m)?.addEventListener("click", () => nx && startLesson(nx.id));
+  $$("[data-claim]", m).forEach(b => b.addEventListener("click", () => claim(b.dataset.claim!)));
   $$("[data-lesson]", m).forEach(b => b.addEventListener("click", () => startLesson(b.dataset.lesson!)));
+}
+
+function challengesHtml(): string {
+  const d = daily();
+  const list = challengesFor(today());
+  const open = list.filter(c => !d.claimed.includes(c.id)).length;
+  return `<section class="challenges">
+    <div class="unit-head"><div><span class="eyebrow">Heute</span><h3>Tages-Challenges</h3></div><span>${open ? `${open} offen · neue jeden Tag` : "Alle geschafft. Morgen gibt es neue."}</span></div>
+    <div class="ch-list">${list.map(c => {
+      const v = Math.min(challengeValue(c, d, todayXp()), c.target);
+      const claimed = d.claimed.includes(c.id), ready = v >= c.target && !claimed;
+      return `<div class="ch ${claimed ? "claimed" : ready ? "ready" : ""}">
+        <div class="ch-text"><b>${esc(c.text)}</b><div class="ch-bar"><i style="width:${(v / c.target) * 100}%"></i></div><small class="num">${v}/${c.target}</small></div>
+        ${claimed ? `<span class="ch-done">Erledigt</span>` : `<button class="btn small" data-claim="${c.id}" ${ready ? "" : "disabled"}>+${c.coins} Münzen</button>`}
+      </div>`;
+    }).join("")}</div>
+  </section>`;
+}
+
+function claim(id: string) {
+  const d = daily();
+  const c = challengesFor(today()).find(x => x.id === id);
+  if (!c || d.claimed.includes(id) || challengeValue(c, d, todayXp()) < c.target) return;
+  d.claimed.push(id);
+  store.progress.challengesDone = (store.progress.challengesDone ?? 0) + 1;
+  addCoins(c.coins);
+  unlock("challenge1");
+  hooks.stats();
+  hooks.rerender();
 }
 
 function startLesson(id: string) {
@@ -72,7 +105,7 @@ function startLesson(id: string) {
     ...l.cards.map(c => ({ type: "card" as const, c })),
     ...l.qs.map((_, i) => ({ type: "q" as const, q: QUESTION_BY_ID[`${l.id}-${i}`] })),
   ];
-  player = { mode: "lesson", lesson: l, steps, i: 0, correct: 0, xp: 0, bonus: 0, answered: null, finished: false };
+  player = { mode: "lesson", lesson: l, steps, i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false };
   hooks.rerender();
   window.scrollTo(0, 0);
 }
@@ -80,7 +113,7 @@ function startLesson(id: string) {
 function startReview() {
   const ids = store.progress.review.filter(id => QUESTION_BY_ID[id]).slice(0, 8);
   for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-  player = { mode: "review", steps: ids.map(id => ({ type: "q" as const, q: QUESTION_BY_ID[id] })), i: 0, correct: 0, xp: 0, bonus: 0, answered: null, finished: false };
+  player = { mode: "review", steps: ids.map(id => ({ type: "q" as const, q: QUESTION_BY_ID[id] })), i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false };
   hooks.rerender();
   window.scrollTo(0, 0);
 }
@@ -121,11 +154,10 @@ function answer(i: number) {
   const q = step.q;
   p.answered = i;
   const prog = store.progress;
+  recordAnswer(i === q.c);
   if (i === q.c) {
     p.correct++;
     p.xp += 10;
-    prog.correct = (prog.correct ?? 0) + 1;
-    if (prog.correct >= 50) unlock("correct50");
     addXp(10);
     if (p.mode === "review") prog.review = prog.review.filter(x => x !== q.id);
   } else if (!prog.review.includes(q.id)) prog.review.push(q.id);
@@ -144,13 +176,16 @@ function renderResult(m: HTMLElement) {
     if (p.mode === "lesson" && p.lesson) {
       const prev = prog.done[p.lesson.id];
       p.bonus = (prev ? 5 : 20) + (perfect ? 10 : 0);
-      if (perfect) unlock("perfect");
+      p.coins = (prev ? 3 : 10) + (perfect ? 5 : 0);
+      bump("lessons");
+      if (perfect) { unlock("perfect"); bump("perfect"); }
       prog.done[p.lesson.id] = { score: Math.max(p.correct, prev?.score ?? 0), at: new Date().toISOString().slice(0, 10) };
       unlock("first");
       if (p.lesson.unit.lessons.every(l => prog.done[l.id])) unlock("unit");
       if (ALL_LESSONS.every(l => prog.done[l.id])) unlock("all");
       addXp(p.bonus);
-    } else if (p.correct > 0) unlock("review");
+    } else if (p.correct > 0) { unlock("review"); p.coins = 5; }
+    if (p.coins) addCoins(p.coins);
     hooks.stats();
   }
   const nx = nextLesson();
@@ -158,6 +193,7 @@ function renderResult(m: HTMLElement) {
     <span class="eyebrow">${p.mode === "lesson" ? "Lektion abgeschlossen" : "Wiederholung beendet"}</span>
     <h2>${perfect ? "Fehlerfrei!" : p.correct >= qn / 2 ? "Gut gemacht!" : "Dranbleiben lohnt sich"}</h2>
     <div class="big num pop">+${p.xp + p.bonus} XP</div>
+    ${p.coins ? `<p class="coins-won">+${p.coins} Münzen</p>` : ""}
     <div class="result-grid">
       <div><b>${p.correct}/${qn}</b><small>richtig</small></div>
       <div><b>${liveStreak()}</b><small>Tage Serie</small></div>
