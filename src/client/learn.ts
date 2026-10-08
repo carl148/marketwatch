@@ -5,7 +5,15 @@ import { $, $$, esc } from "./ui.ts";
 
 // Lernpfad, Lektionen mit Quiz und der Wiederholen-Stapel.
 
-type Step = { type: "card"; c: Card } | { type: "q"; q: Question & { id: string; lesson: LessonWithUnit } };
+type Step = { type: "card"; c: Card } | { type: "q"; q: Question & { id: string; lesson: LessonWithUnit }; order: number[] };
+
+/** Antworten in zufälliger Reihenfolge, damit die Position der richtigen Antwort nichts verrät. */
+function shuffled(n: number): number[] {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const qStep = (id: string): Step => ({ type: "q", q: QUESTION_BY_ID[id], order: shuffled(QUESTION_BY_ID[id].a.length) });
 interface Player {
   mode: "lesson" | "review";
   lesson?: LessonWithUnit;
@@ -103,7 +111,7 @@ function startLesson(id: string) {
   const l = ALL_LESSONS.find(x => x.id === id)!;
   const steps: Step[] = [
     ...l.cards.map(c => ({ type: "card" as const, c })),
-    ...l.qs.map((_, i) => ({ type: "q" as const, q: QUESTION_BY_ID[`${l.id}-${i}`] })),
+    ...l.qs.map((_, i) => qStep(`${l.id}-${i}`)),
   ];
   player = { mode: "lesson", lesson: l, steps, i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false };
   hooks.rerender();
@@ -113,7 +121,7 @@ function startLesson(id: string) {
 function startReview() {
   const ids = store.progress.review.filter(id => QUESTION_BY_ID[id]).slice(0, 8);
   for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-  player = { mode: "review", steps: ids.map(id => ({ type: "q" as const, q: QUESTION_BY_ID[id] })), i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false };
+  player = { mode: "review", steps: ids.map(qStep), i: 0, correct: 0, xp: 0, bonus: 0, coins: 0, answered: null, finished: false };
   hooks.rerender();
   window.scrollTo(0, 0);
 }
@@ -132,7 +140,8 @@ function renderPlayer(m: HTMLElement) {
   } else {
     const q = s.q, ans = p.answered;
     m.innerHTML = `<div class="player">${head}<article class="card"><span class="eyebrow">${p.mode === "review" ? "Wiederholung · " + esc(q.lesson.title) : "Frage"}</span><h2>${esc(q.q)}</h2>
-      <div class="opts">${q.a.map((t, i) => {
+      <div class="opts">${s.order.map(i => {
+        const t = q.a[i];
         let cls = "";
         if (ans !== null) { if (i === q.c) cls = "right"; else if (i === ans) cls = "wrong"; }
         return `<button class="opt ${cls}" data-i="${i}" ${ans !== null ? "disabled" : ""}>${esc(t)}</button>`;

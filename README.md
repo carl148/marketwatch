@@ -10,7 +10,7 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 
 | Bereich | Funktionen |
 |---|---|
-| **Lernen** | 7 Kapitel mit 14 Lektionen (Budget, Sparen, Zinseszins, Investieren, Steuern, Vorsorge, Wirtschaft), Lernkarten und Quiz, XP, Level und Ränge, Tagesziel |
+| **Lernen** | 10 Kapitel mit 40 Lektionen: Budget & Konto, Sparen, Geld im Alltag, Kredite & Schulden, Zinseszins, Investieren, Steuern, Vorsorge, Wirtschaft, Betrug & Krypto. Lernkarten, Quiz mit gemischten Antworten, XP, Level und Ränge, Tagesziel |
 | **Tages-Challenges** | Jeden Tag drei neue Aufgaben (z. B. „Beantworte 10 Fragen richtig“), die Münzen bringen |
 | **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
 | **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
