@@ -1,12 +1,10 @@
 import { ACHIEVEMENTS, ALL_LESSONS } from "./content.ts";
-import { ACCENTS, FREEZE_PRICE, MAX_FREEZES, dayDiff, type AccentId } from "./rules.ts";
+import { ACCENTS, FREEZE_PRICE, MAX_FREEZES, dayDiff, rankOf, type AccentId } from "./rules.ts";
 import { addCoins, applyLook, levelOf, liveStreak, store, today, unlock } from "./store.ts";
 import { $, $$, esc, toast } from "./ui.ts";
 
 // Profil: Name und Aussehen, Statistik, Aktivitätskalender, Shop, Daten.
 
-const RANKS: [number, string][] = [[1, "Einsteiger"], [3, "Sparfuchs"], [5, "Finanzkenner"], [8, "Börsenprofi"], [12, "Finanzmeister"]];
-export const rankOf = (level: number) => RANKS.filter(([l]) => level >= l).at(-1)![1];
 
 const initials = (name: string) => name.trim().split(/\s+/).map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
 
@@ -41,6 +39,8 @@ export function renderProfile(m: HTMLElement) {
       ${tile("Challenges", String(p.challengesDone ?? 0))}
       ${tile("Erfolge", `${ACHIEVEMENTS.filter(x => p.ach[x.id]).length}/${ACHIEVEMENTS.length}`)}
       ${tile("XP gesamt", p.xp.toLocaleString("de-DE"))}
+      ${tile("Kronen", String(Object.values(p.exams ?? {}).filter(e => e.passed).length))}
+      ${tile("Sprint-Bestwert", String(p.sprintBest ?? 0))}
     </div>
 
     <div class="section-title"><h2>Aktivität</h2><span class="eyebrow">Letzte 12 Wochen</span></div>

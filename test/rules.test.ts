@@ -70,3 +70,18 @@ test("Auffrischen: Abstände wachsen, Fehler setzen zurück", async () => {
   const last = REFRESH_DAYS.length - 1;
   assert.equal(nextRefresh(last, true, "2026-10-09").stage, last);
 });
+
+test("Sterne, Prüfung und Sprint-Challenge", async () => {
+  const { starsFor, examPassed, challengesFor, rankOf } = await import("../src/client/rules.ts");
+  assert.deepEqual([0, 1, 2, 3].map(c => starsFor(c, 3)), [0, 1, 2, 3]);
+  assert.equal(examPassed(8, 10), true);
+  assert.equal(examPassed(7, 10), false);
+  assert.equal(examPassed(0, 0), false);
+  for (let i = 1; i <= 28; i++) {
+    const day = `2026-02-${String(i).padStart(2, "0")}`;
+    assert.ok(challengesFor(day).every(c => c.metric !== "sprint"), "ohne Freigabe kein Sprint");
+  }
+  assert.equal(rankOf(1), "Einsteiger");
+  assert.equal(rankOf(5), "Finanzkenner");
+  assert.equal(rankOf(40), "Geldgenie");
+});

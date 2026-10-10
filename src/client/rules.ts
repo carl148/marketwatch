@@ -44,11 +44,12 @@ export interface DailyCounters {
   combo: number;
   comboNow: number;
   calc: number;
+  sprint: number;
   claimed: string[];
 }
-export const freshDaily = (day: string): DailyCounters => ({ day, lessons: 0, newLessons: 0, correct: 0, perfect: 0, combo: 0, comboNow: 0, calc: 0, claimed: [] });
+export const freshDaily = (day: string): DailyCounters => ({ day, lessons: 0, newLessons: 0, correct: 0, perfect: 0, combo: 0, comboNow: 0, calc: 0, sprint: 0, claimed: [] });
 
-type Metric = "lessons" | "correct" | "perfect" | "combo" | "calc" | "xp";
+type Metric = "lessons" | "correct" | "perfect" | "combo" | "calc" | "sprint" | "xp";
 export interface Challenge { id: string; text: string; metric: Metric; target: number; coins: number }
 
 export const CHALLENGE_POOL: Challenge[] = [
@@ -60,6 +61,7 @@ export const CHALLENGE_POOL: Challenge[] = [
   { id: "perfect", text: "Schließe eine Lektion ohne Fehler ab", metric: "perfect", target: 1, coins: 20 },
   { id: "combo3", text: "Beantworte 3 Fragen hintereinander richtig", metric: "combo", target: 3, coins: 10 },
   { id: "calc", text: "Rechne etwas mit einem der Rechner aus", metric: "calc", target: 1, coins: 5 },
+  { id: "sprint", text: "Spiele einen Wissens-Sprint", metric: "sprint", target: 1, coins: 10 },
 ];
 
 function hash(s: string): number {
@@ -68,9 +70,13 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
-/** Drei Challenges pro Tag, für alle Nutzer am selben Tag gleich. Nie zwei mit derselben Messgröße. */
-export function challengesFor(day: string): Challenge[] {
-  const order = CHALLENGE_POOL.map(c => ({ c, k: hash(day + c.id) })).sort((a, b) => a.k - b.k).map(x => x.c);
+/**
+ * Drei Challenges pro Tag, für alle Nutzer am selben Tag gleich. Nie zwei mit derselben Messgröße.
+ * Den Sprint gibt es erst, wenn genug Lektionen für Sprint-Fragen geschafft sind.
+ */
+export function challengesFor(day: string, opts: { sprint?: boolean } = {}): Challenge[] {
+  const pool = CHALLENGE_POOL.filter(c => opts.sprint || c.metric !== "sprint");
+  const order = pool.map(c => ({ c, k: hash(day + c.id) })).sort((a, b) => a.k - b.k).map(x => x.c);
   const out: Challenge[] = [];
   for (const c of order) {
     if (out.some(x => x.metric === c.metric)) continue;
@@ -102,6 +108,26 @@ export function nextRefresh(stage: number, passed: boolean, today: string): { st
   const next = passed ? Math.min(stage + 1, REFRESH_DAYS.length - 1) : 0;
   return { stage: next, due: addDays(today, REFRESH_DAYS[next]) };
 }
+
+// ---- Ränge, Prüfungen, Sprint ----
+
+export const RANKS: [number, string][] = [[1, "Einsteiger"], [3, "Sparfuchs"], [5, "Finanzkenner"], [8, "Börsenprofi"], [12, "Finanzmeister"], [16, "Geldgenie"]];
+export const rankOf = (level: number) => RANKS.filter(([l]) => level >= l).at(-1)![1];
+
+/** Münzen als Belohnung je erreichtem Level. */
+export const LEVEL_UP_COINS = 20;
+
+/** Kapitelprüfung: Zahl der Fragen und Anteil zum Bestehen. */
+export const EXAM_QUESTIONS = 10;
+export const EXAM_PASS = 0.8;
+export const examPassed = (correct: number, total: number) => total > 0 && correct / total >= EXAM_PASS;
+
+/** Sterne für eine Lektion: Anteil richtiger Antworten auf 0 bis 3 Sterne. */
+export const starsFor = (correct: number, total: number) => (total ? Math.round((correct / total) * 3) : 0);
+
+export const SPRINT_SECONDS = 60;
+/** Mindestzahl gelernter Fragen, damit ein Sprint Sinn ergibt. */
+export const SPRINT_MIN_QUESTIONS = 6;
 
 // ---- Shop ----
 export const FREEZE_PRICE = 30;

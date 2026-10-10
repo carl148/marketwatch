@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS, type AchievementId } from "./content.ts";
-import { addDays, applyStreak, dayDiff, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
+import { LEVEL_UP_COINS, addDays, applyStreak, dayDiff, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
 
 // Alle Daten bleiben auf dem Gerät (localStorage). Es gibt keinen Server.
 
@@ -30,6 +30,11 @@ export interface Progress {
   /** XP pro Tag für den Aktivitätskalender. */
   history: Record<string, number>;
   daily: DailyCounters;
+  /** Kapitelprüfungen: bester Wert und ob die Krone erreicht ist. */
+  exams: Record<string, { best: number; total: number; passed: boolean }>;
+  /** Bester Wissens-Sprint und Zahl der Sprints. */
+  sprintBest: number;
+  sprints: number;
   profile: Profile;
   ach: Partial<Record<AchievementId, string>>;
 }
@@ -54,7 +59,7 @@ function write(key: string, value: unknown): boolean {
 const freshProfile = (): Profile => ({ name: "", accent: "gruen", theme: "system", unlocked: ["gruen"] });
 const freshProgress = (): Progress => ({
   xp: 0, streak: 0, best: 0, lastDay: null, day: null, dayXp: 0, done: {}, review: [], correct: 0, answered: 0,
-  coins: 0, freezes: 0, challengesDone: 0, history: {}, daily: freshDaily(today()), profile: freshProfile(), ach: {},
+  coins: 0, freezes: 0, challengesDone: 0, history: {}, daily: freshDaily(today()), exams: {}, sprintBest: 0, sprints: 0, profile: freshProfile(), ach: {},
 });
 
 function loadProgress(): Progress {
@@ -92,6 +97,8 @@ export const levelStart = (n: number) => 50 * (n - 1) * n;
 type Listener = (msg: string) => void;
 let notify: Listener = () => {};
 export function onNotify(fn: Listener) { notify = fn; }
+let levelUp: (level: number) => void = () => {};
+export function onLevelUp(fn: (level: number) => void) { levelUp = fn; }
 
 /** Tageszähler für die Challenges; beginnt jeden Tag neu. */
 export function daily(): DailyCounters {
@@ -100,7 +107,7 @@ export function daily(): DailyCounters {
   return p.daily;
 }
 
-export function bump(key: "lessons" | "correct" | "perfect" | "calc", n = 1) {
+export function bump(key: "lessons" | "correct" | "perfect" | "calc" | "sprint", n = 1) {
   daily()[key] += n;
   store.saveProgress();
 }
@@ -135,7 +142,12 @@ export function addXp(n: number) {
   if (p.streak >= 3) unlock("streak3");
   if (p.streak >= 7) unlock("streak7");
   if (p.xp >= 500) unlock("xp500");
-  if (levelOf(p.xp) > before) notify(`Level ${levelOf(p.xp)} erreicht`);
+  const after = levelOf(p.xp);
+  if (after > before) {
+    p.coins = (p.coins ?? 0) + LEVEL_UP_COINS * (after - before);
+    if (after >= 5) unlock("level5");
+    levelUp(after);
+  }
   store.saveProgress();
 }
 

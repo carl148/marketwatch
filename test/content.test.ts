@@ -25,3 +25,11 @@ test("Jede Lektion hat Lernkarten und gültige Quizfragen", () => {
 test("Erfolge haben eindeutige IDs", () => {
   assert.equal(new Set(ACHIEVEMENTS.map(a => a.id)).size, ACHIEVEMENTS.length);
 });
+
+test("Lexikon: eindeutige Begriffe und gültige Verweise auf Lektionen", async () => {
+  const { GLOSSARY } = await import("../src/client/glossary.ts");
+  assert.ok(GLOSSARY.length >= 50);
+  assert.equal(new Set(GLOSSARY.map(g => g.t)).size, GLOSSARY.length);
+  const ids = new Set(ALL_LESSONS.map(l => l.id));
+  for (const g of GLOSSARY) if (g.l) assert.ok(ids.has(g.l), `${g.t}: Lektion ${g.l} fehlt`);
+});

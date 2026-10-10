@@ -24,11 +24,11 @@
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4 5 5.5 5 11a5 5 0 0 1-10 0c0-2.5 1.2-4 2.5-5 .2 2 1.2 3 2.3 3C11 8 11 5 12 2z"/></svg>
             <span class="num" id="streakNum">0</span><span class="sr-only">Tage Lernserie</span>
           </div>
-          <div class="stat xp" title="Erfahrungspunkte">
+          <div class="stat xp" id="xpStat" title="Erfahrungspunkte">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.6z"/></svg>
             <span class="num" id="xpNum">0</span><span class="sr-only">XP</span>
           </div>
-          <div class="stat coins" title="Münzen">
+          <div class="stat coins" id="coinStat" title="Münzen">
             <span class="coin-sm" aria-hidden="true"></span>
             <span class="num" id="coinNum">0</span><span class="sr-only">Münzen</span>
           </div>
@@ -41,8 +41,9 @@
       </div>
       <nav class="tabs" aria-label="Bereiche">
         <a href="#learn" data-tab="learn">Lernen</a>
+        <a href="#review" data-tab="review">Üben <span class="badge" id="reviewBadge" hidden>0</span></a>
         <a href="#tools" data-tab="tools">Rechner</a>
-        <a href="#review" data-tab="review"><span class="lg">Wiederholen</span><span class="sm">Üben</span> <span class="badge" id="reviewBadge" hidden>0</span></a>
+        <a href="#lexicon" data-tab="lexicon">Lexikon</a>
         <a href="#profile" data-tab="profile">Profil</a>
       </nav>
     </header>

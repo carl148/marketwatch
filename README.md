@@ -17,9 +17,13 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 | **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
 | **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
 | **Profil** | Name, Avatar, Akzentfarbe, Hell- oder Dunkelmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
-| **Erfolge** | 16 Erfolge zum Freischalten |
+| **Kapitelprüfungen** | Nach jedem Kapitel eine Prüfung mit 10 gemischten Fragen. Ab 80 % gibt es eine Krone |
+| **Wissens-Sprint** | 60 Sekunden, so viele richtige Antworten wie möglich, nur aus bereits gelernten Lektionen, mit Bestwert |
+| **Finanzlexikon** | Über 60 Begriffe von Abgeltungsteuer bis Zinsbindung, mit Suche und Verweis auf die passende Lektion |
+| **Animationen** | Feier-Fenster bei Level-Aufstieg, Kapitel-Abschluss und Krone (mit Münzregen), Sterne pro Lektion, hochzählende XP, sanftes Feedback bei Antworten. Bei „Bewegung reduzieren“ im Betriebssystem werden sie abgeschaltet |
+| **Erfolge** | 20 Erfolge zum Freischalten |
 | **Rechner** | Sparplan mit Diagramm (inkl. Kosten und Inflation), 50/30/20-Budget, Notgroschen, Kredit, Steuer auf Kapitalerträge |
-| **Üben** | Falsch beantwortete Fragen kommen in einen Stapel, bis sie sitzen |
+| **Üben** | Wissens-Sprint, fällige Lektionen auffrischen und falsch beantwortete Fragen wiederholen |
 
 Alles ist kostenlos und ohne Werbung. Ein Premium-Abo wie im Original gibt es bewusst nicht, weil dafür Bezahlsysteme und Nutzerkonten nötig wären.
 
@@ -91,6 +95,10 @@ src/
   client/store.ts     Speicher im Browser, XP, Münzen, Erfolge
   client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Lerntempo, Auffrischen, Shop
   client/profile-view.ts Profil, Statistik, Kalender, Shop
+  client/celebrate.ts Feier-Fenster und Animationen
+  client/sprint.ts    Wissens-Sprint
+  client/glossary.ts  Begriffe des Finanzlexikons
+  client/lexicon-view.ts Lexikon mit Suche
   client/ui.ts        Hilfsfunktionen
 public/               HTML, CSS, Icons, Manifest, Service Worker, Rechtstexte
 scripts/              Build und Icon-Erzeugung

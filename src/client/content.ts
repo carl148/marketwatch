@@ -971,6 +971,10 @@ export const ACHIEVEMENTS = [
   { id: "refresh1", name: "Erste Auffrischung" },
   { id: "lessons25", name: "25 Lektionen" },
   { id: "lessons50", name: "50 Lektionen" },
+  { id: "level5", name: "Level 5" },
+  { id: "exam1", name: "Erste Krone" },
+  { id: "crowns5", name: "5 Kronen" },
+  { id: "sprint10", name: "Sprint-Profi" },
   { id: "all", name: "Alle Lektionen" },
 ] as const;
 export type AchievementId = (typeof ACHIEVEMENTS)[number]["id"];
