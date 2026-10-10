@@ -85,3 +85,16 @@ test("Sterne, Prüfung und Sprint-Challenge", async () => {
   assert.equal(rankOf(5), "Finanzkenner");
   assert.equal(rankOf(40), "Geldgenie");
 });
+
+test("Benutzername und Kalenderwoche", async () => {
+  const { usernameError, weekKey } = await import("../src/client/rules.ts");
+  assert.equal(usernameError("sparfuchs_23"), null);
+  assert.equal(usernameError("Jörg.M"), null);
+  assert.ok(usernameError("ab"));
+  assert.ok(usernameError("mit leerzeichen"));
+  assert.ok(usernameError("x".repeat(21)));
+  assert.equal(weekKey("2026-10-10"), "2026-W41");
+  assert.equal(weekKey("2026-01-01"), "2026-W01");
+  assert.equal(weekKey("2027-01-01"), "2026-W53");
+  assert.equal(weekKey("2026-10-05"), weekKey("2026-10-11"), "Montag bis Sonntag gleiche Woche");
+});

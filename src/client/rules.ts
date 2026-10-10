@@ -57,7 +57,7 @@ export const CHALLENGE_POOL: Challenge[] = [
   { id: "lesson2", text: "Schließe zwei Lektionen ab", metric: "lessons", target: 2, coins: 20 },
   { id: "correct5", text: "Beantworte 5 Fragen richtig", metric: "correct", target: 5, coins: 10 },
   { id: "correct10", text: "Beantworte 10 Fragen richtig", metric: "correct", target: 10, coins: 15 },
-  { id: "goal", text: "Erreiche dein Tagesziel von 30 XP", metric: "xp", target: 30, coins: 15 },
+  { id: "goal", text: "Erreiche dein Tagesziel", metric: "xp", target: 30, coins: 15 },
   { id: "perfect", text: "Schließe eine Lektion ohne Fehler ab", metric: "perfect", target: 1, coins: 20 },
   { id: "combo3", text: "Beantworte 3 Fragen hintereinander richtig", metric: "combo", target: 3, coins: 10 },
   { id: "calc", text: "Rechne etwas mit einem der Rechner aus", metric: "calc", target: 1, coins: 5 },
@@ -128,6 +128,46 @@ export const starsFor = (correct: number, total: number) => (total ? Math.round(
 export const SPRINT_SECONDS = 60;
 /** Mindestzahl gelernter Fragen, damit ein Sprint Sinn ergibt. */
 export const SPRINT_MIN_QUESTIONS = 6;
+
+// ---- Konto und Tagesziel ----
+
+export const GOAL_OPTIONS = [
+  { xp: 20, name: "Locker", hint: "etwa 1 Lektion am Tag" },
+  { xp: 30, name: "Normal", hint: "etwa 1 bis 2 Lektionen" },
+  { xp: 50, name: "Ernsthaft", hint: "etwa 2 Lektionen" },
+  { xp: 80, name: "Intensiv", hint: "3 Lektionen und mehr" },
+] as const;
+export const LEVELS_OF_KNOWLEDGE = ["Einsteiger", "Grundlagen", "Fortgeschritten"] as const;
+
+/** Benutzername: 3 bis 20 Zeichen, Buchstaben, Ziffern, Punkt, Unterstrich, Bindestrich. */
+export function usernameError(name: string): string | null {
+  const n = name.trim();
+  if (n.length < 3) return "Mindestens 3 Zeichen.";
+  if (n.length > 20) return "Höchstens 20 Zeichen.";
+  if (!/^[A-Za-zÄÖÜäöüß0-9_.-]+$/.test(n)) return "Nur Buchstaben, Ziffern, Punkt, Unterstrich und Bindestrich.";
+  return null;
+}
+
+// ---- Premium ----
+
+/** Die Vorteile entsprechen denen im App-Store-Eintrag des Originals. */
+export const PREMIUM_PERKS = [
+  { title: "Sofort alle Lektionen", text: "Kein Tageslimit und keine Reihenfolge: Lerne alle 100 Lektionen, wann du willst." },
+  { title: "Lernserie leichter halten", text: "Jede Woche ein Serienschutz gratis und Platz für bis zu drei auf einmal." },
+  { title: "Werbefrei", text: "Fintelify zeigt keine Werbung. Daran ändert sich auch ohne Premium nichts." },
+  { title: "Premium-Benutzername", text: "Dein Name erscheint in Gold mit Krone im Profil und auf der Startseite." },
+] as const;
+export const PREMIUM_MAX_FREEZES = 3;
+
+/** Kalenderwoche als Schlüssel (ISO 8601), für den wöchentlichen Gratis-Serienschutz. */
+export function weekKey(day: string): string {
+  const d = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)));
+  const wd = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - wd + 3);
+  const firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((d.getTime() - firstThu.getTime()) / 86_400_000 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
 
 // ---- Shop ----
 export const FREEZE_PRICE = 30;

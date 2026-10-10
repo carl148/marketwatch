@@ -1,6 +1,6 @@
 // Service Worker: hält alle App-Dateien offline verfügbar.
 // Bei Änderungen an der App die Versionsnummer erhöhen.
-const CACHE = "fintelify-v3";
+const CACHE = "fintelify-v4";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "icon.svg", "icon-192.png", "manifest.webmanifest", "impressum.html", "datenschutz.html", "nutzungsbedingungen.html"];
 
 self.addEventListener("install", e => {

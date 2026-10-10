@@ -8,7 +8,8 @@ import { $, esc } from "./ui.ts";
 export type Celebration =
   | { kind: "level"; level: number }
   | { kind: "chapter"; title: string; coins: number }
-  | { kind: "crown"; title: string; coins: number };
+  | { kind: "crown"; title: string; coins: number }
+  | { kind: "premium" };
 
 const queue: Celebration[] = [];
 let showing = false;
@@ -48,6 +49,10 @@ function content(c: Celebration): { eyebrow: string; title: string; text: string
   if (c.kind === "chapter") return {
     eyebrow: "Kapitel geschafft", title: c.title, text: "Alle Lektionen erledigt. Die Kapitelprüfung ist jetzt freigeschaltet.",
     badge: `<span class="cel-icon">${BOOK}</span>`, coins: c.coins,
+  };
+  if (c.kind === "premium") return {
+    eyebrow: "Willkommen bei Premium", title: "Premium ist aktiv", text: "Alle Lektionen sind offen, und jede Woche gibt es einen Serienschutz gratis.",
+    badge: `<span class="cel-icon crown">${CROWN}</span>`, coins: 0,
   };
   return {
     eyebrow: "Kapitelprüfung bestanden", title: c.title, text: "Du hast dir die Krone für dieses Kapitel verdient.",

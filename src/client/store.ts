@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS, type AchievementId } from "./content.ts";
-import { LEVEL_UP_COINS, addDays, applyStreak, dayDiff, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
+import { GOAL_OPTIONS, LEVEL_UP_COINS, MAX_FREEZES, PREMIUM_MAX_FREEZES, addDays, weekKey, applyStreak, dayDiff, freshDaily, visibleStreak, type AccentId, type DailyCounters } from "./rules.ts";
 
 // Alle Daten bleiben auf dem Gerät (localStorage). Es gibt keinen Server.
 
@@ -8,6 +8,15 @@ export interface Profile {
   accent: AccentId;
   theme: "system" | "light" | "dark";
   unlocked: AccentId[];
+  /** Tagesziel in XP. */
+  dailyGoal: number;
+  knowledge: string;
+  /** Konto beim ersten Start eingerichtet. */
+  onboarded: boolean;
+  premium: boolean;
+  premiumSince?: string;
+  /** Woche, in der der Premium-Serienschutz zuletzt gutgeschrieben wurde. */
+  premiumFreezeWeek?: string;
 }
 
 export interface Progress {
@@ -56,15 +65,21 @@ function write(key: string, value: unknown): boolean {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
 }
 
-const freshProfile = (): Profile => ({ name: "", accent: "gruen", theme: "system", unlocked: ["gruen"] });
+const freshProfile = (): Profile => ({ name: "", accent: "gruen", theme: "system", unlocked: ["gruen"], dailyGoal: GOAL_OPTIONS[1].xp, knowledge: "Einsteiger", onboarded: false, premium: false });
 const freshProgress = (): Progress => ({
   xp: 0, streak: 0, best: 0, lastDay: null, day: null, dayXp: 0, done: {}, review: [], correct: 0, answered: 0,
   coins: 0, freezes: 0, challengesDone: 0, history: {}, daily: freshDaily(today()), exams: {}, sprintBest: 0, sprints: 0, profile: freshProfile(), ach: {},
 });
 
-function loadProgress(): Progress {
-  const p = read<Progress>(KEYS.progress, freshProgress());
-  p.profile = { ...freshProfile(), ...p.profile };
+function loadProgress(): Progress { return normalize(read<Progress>(KEYS.progress, freshProgress())); }
+
+/** Ergänzt fehlende Felder älterer Spielstände. */
+function normalize(raw: Partial<Progress>): Progress {
+  const p = { ...freshProgress(), ...raw } as Progress;
+  const saved = p.profile as Partial<Profile> | undefined;
+  p.profile = { ...freshProfile(), ...saved };
+  // Wer schon vor der Konto-Einrichtung gelernt hat, muss sie nicht nachholen.
+  if (saved && saved.onboarded === undefined && p.xp > 0) p.profile.onboarded = true;
   p.daily = { ...freshDaily(today()), ...p.daily };
   return p;
 }
@@ -90,6 +105,9 @@ export const store = {
 // ---- Lernfortschritt ----
 
 export const liveStreak = () => visibleStreak(store.progress, today());
+export const dailyGoal = () => store.progress.profile.dailyGoal || GOAL_OPTIONS[1].xp;
+export const isPremium = () => !!store.progress.profile.premium;
+export const maxFreezes = () => (isPremium() ? PREMIUM_MAX_FREEZES : MAX_FREEZES);
 export const todayXp = () => (store.progress.day === today() ? store.progress.dayXp : 0);
 export const levelOf = (xp: number) => { let n = 1; while (xp >= 50 * n * (n + 1)) n++; return n; };
 export const levelStart = (n: number) => 50 * (n - 1) * n;
@@ -181,4 +199,47 @@ export function dueLessons(): string[] {
     .filter(x => dayDiff(x.due, t) >= 0)
     .sort((a, b) => a.due.localeCompare(b.due))
     .map(x => x.id);
+}
+
+/** Premium: einmal pro Kalenderwoche einen Serienschutz gutschreiben. */
+export function grantWeeklyFreeze(): boolean {
+  const p = store.progress, prof = p.profile;
+  if (!prof.premium) return false;
+  const wk = weekKey(today());
+  if (prof.premiumFreezeWeek === wk) return false;
+  prof.premiumFreezeWeek = wk;
+  const before = p.freezes;
+  p.freezes = Math.min(PREMIUM_MAX_FREEZES, p.freezes + 1);
+  store.saveProgress();
+  return p.freezes > before;
+}
+
+export function setPremium(on: boolean) {
+  const prof = store.progress.profile;
+  prof.premium = on;
+  prof.premiumSince = on ? prof.premiumSince ?? today() : undefined;
+  if (!on) store.progress.freezes = Math.min(store.progress.freezes, MAX_FREEZES);
+  store.saveProgress();
+}
+
+// ---- Sicherung und Übertragung ----
+
+/** Sicherungscode mit dem gesamten Fortschritt (Base64-kodiertes JSON). */
+export function exportCode(): string {
+  const json = JSON.stringify({ app: "fintelify", v: 1, progress: store.progress, calc: store.calc });
+  return btoa(String.fromCharCode(...new TextEncoder().encode(json)));
+}
+
+/** Liest einen Sicherungscode ein. Wirft einen Fehler mit verständlicher Meldung. */
+export function importCode(code: string) {
+  let data: { app?: string; progress?: Progress; calc?: Record<string, number> };
+  try {
+    const bytes = Uint8Array.from(atob(code.trim().replace(/\s+/g, "")), c => c.charCodeAt(0));
+    data = JSON.parse(new TextDecoder().decode(bytes));
+  } catch { throw new Error("Der Code ist ungültig. Kopiere ihn bitte vollständig."); }
+  if (data.app !== "fintelify" || !data.progress || typeof data.progress.xp !== "number") throw new Error("Das ist kein Sicherungscode von Fintelify.");
+  store.progress = normalize(data.progress);
+  store.calc = data.calc ?? {};
+  store.saveProgress();
+  store.saveCalc();
 }

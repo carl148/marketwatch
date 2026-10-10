@@ -21,6 +21,8 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 | **Wissens-Sprint** | 60 Sekunden, so viele richtige Antworten wie möglich, nur aus bereits gelernten Lektionen, mit Bestwert |
 | **Finanzlexikon** | Über 60 Begriffe von Abgeltungsteuer bis Zinsbindung, mit Suche und Verweis auf die passende Lektion |
 | **Animationen** | Feier-Fenster bei Level-Aufstieg, Kapitel-Abschluss und Krone (mit Münzregen), Sterne pro Lektion, hochzählende XP, sanftes Feedback bei Antworten. Bei „Bewegung reduzieren“ im Betriebssystem werden sie abgeschaltet |
+| **Konto** | Beim ersten Start: Benutzername, Tagesziel (20 bis 80 XP) und Wissensstand, der den empfohlenen Einstieg bestimmt. Fortschritt per Sicherungscode auf ein anderes Gerät übertragen |
+| **Premium** | Die vier Vorteile des Originals: sofort alle Lektionen, Lernserie leichter halten (jede Woche ein Serienschutz gratis, bis zu drei), werbefrei, Premium-Benutzername in Gold mit Krone. Bezahlung noch nicht angebunden, siehe unten |
 | **Erfolge** | 20 Erfolge zum Freischalten |
 | **Rechner** | Sparplan mit Diagramm (inkl. Kosten und Inflation), 50/30/20-Budget, Notgroschen, Kredit, Steuer auf Kapitalerträge |
 | **Üben** | Wissens-Sprint, fällige Lektionen auffrischen und falsch beantwortete Fragen wiederholen |
@@ -66,6 +68,14 @@ Für Nutzer in Deutschland kann ein Anbieter mit Rechenzentrum in der EU die Dat
 
 - **Sofort:** Seite im Handy-Browser öffnen und „Zum Startbildschirm hinzufügen“ wählen.
 - **App Store und Google Play:** Die Website kann mit [Capacitor](https://capacitorjs.com) als App verpackt werden. Dafür brauchst du ein Apple-Entwicklerkonto (99 $ im Jahr) und ein Google-Play-Konto (einmalig 25 $).
+
+## Premium und Bezahlung
+
+Die Premium-Vorteile sind fertig eingebaut. Für den Kauf braucht es einen Zahlungsanbieter, zum Beispiel In-App-Käufe im App Store (bei einer mit Capacitor verpackten App) oder Stripe im Web. Dafür muss nur die Funktion `purchase()` in `src/client/premium.ts` angepasst werden.
+
+Bis dahin gibt es auf der Premium-Seite einen **Testmodus**, mit dem sich Premium ohne Bezahlung ausprobieren lässt. **Vor der Veröffentlichung `TEST_MODE` in `src/client/premium.ts` auf `false` setzen.**
+
+Hinweis: Weil alle Daten im Browser liegen, ließe sich Premium technisch auch ohne Kauf freischalten. Für einen echten Verkauf sollte der Kauf deshalb über den App Store oder einen kleinen Server geprüft werden.
 
 ## Inhalte ändern
 

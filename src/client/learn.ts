@@ -1,7 +1,7 @@
-import { ACHIEVEMENTS, ALL_LESSONS, DAILY_GOAL, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
+import { ACHIEVEMENTS, ALL_LESSONS, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
 import { celebrate, countUp, flushCelebrations } from "./celebrate.ts";
 import { EXAM_QUESTIONS, NEW_LESSONS_PER_DAY, SPRINT_MIN_QUESTIONS, challengeValue, challengesFor, examPassed, nextRefresh, starsFor } from "./rules.ts";
-import { addCoins, addXp, bump, daily, dueLessons, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
+import { addCoins, addXp, bump, daily, dailyGoal, dueLessons, isPremium, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
 import { mountSprint } from "./sprint.ts";
 import { $, $$, esc } from "./ui.ts";
 
@@ -47,10 +47,16 @@ const pathOpen = (l: LessonWithUnit) => {
   const idx = l.unit.lessons.findIndex(x => x.id === l.id);
   return idx === 0 || !!store.progress.done[l.unit.lessons[idx - 1].id];
 };
-const newLeft = () => Math.max(0, NEW_LESSONS_PER_DAY - daily().newLessons);
+const newLeft = () => (isPremium() ? Infinity : Math.max(0, NEW_LESSONS_PER_DAY - daily().newLessons));
 /** Spielbar: schon geschafft (Wiederholen geht immer) oder Weg frei und heute noch neue Lektionen übrig. */
-const isUnlocked = (l: LessonWithUnit) => !!store.progress.done[l.id] || (pathOpen(l) && newLeft() > 0);
-const nextLesson = () => ALL_LESSONS.find(l => !store.progress.done[l.id] && pathOpen(l));
+const isUnlocked = (l: LessonWithUnit) => !!store.progress.done[l.id] || isPremium() || (pathOpen(l) && newLeft() > 0);
+/** Empfohlener Einstieg je Wissensstand: Wer Grundlagen kennt, startet beim Zinseszins, Fortgeschrittene beim Investieren. */
+const START_UNIT: Record<string, string> = { Grundlagen: "zins", Fortgeschritten: "invest" };
+const nextLesson = () => {
+  const start = START_UNIT[store.progress.profile.knowledge];
+  const fromStart = start ? ALL_LESSONS.find(l => l.unit.id === start && !store.progress.done[l.id] && pathOpen(l)) : undefined;
+  return fromStart ?? ALL_LESSONS.find(l => !store.progress.done[l.id] && pathOpen(l));
+};
 
 const STAR = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>`;
 const CROWN = `<svg class="crown-ic" viewBox="0 0 24 24" fill="currentColor" aria-label="Krone"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>`;
@@ -79,12 +85,13 @@ export function renderLearn(m: HTMLElement) {
   m.innerHTML = `
     <section class="hero">
       <div>
-        <span class="eyebrow on-dark">${doneCount} von ${ALL_LESSONS.length} Lektionen · heute noch ${left} neue</span>
+        <span class="eyebrow on-dark">${store.progress.profile.name ? `Hallo, ${esc(store.progress.profile.name)} · ` : ""}${doneCount} von ${ALL_LESSONS.length} Lektionen · ${isPremium() ? "Premium: alle offen" : `heute noch ${left} neue`}</span>
         <h2>${heroTitle}</h2>
         <p>${heroText}</p>
         <div class="row-actions hero-actions">
           ${nx && left > 0 ? `<button class="btn" id="continueBtn">Lektion starten</button>` : ""}
           ${due.length ? `<button class="btn ${nx && left > 0 ? "ghost-dark" : ""}" id="refreshBtn">${due.length} ${due.length === 1 ? "Lektion" : "Lektionen"} auffrischen</button>` : ""}
+          ${nx && left === 0 && !isPremium() ? `<a class="btn ghost-dark" href="#premium">Mit Premium sofort weiterlernen</a>` : ""}
         </div>
       </div>
       <div class="lvl"><span class="eyebrow on-dark">Level</span><b>${lvl}</b><span class="num small">${p.xp - a} / ${b - a} XP</span></div>
@@ -149,6 +156,9 @@ function startRefresh() {
   window.scrollTo(0, 0);
 }
 
+/** Das Tagesziel-Challenge richtet sich nach dem eigenen Tagesziel. */
+const targetOf = (c: { metric: string; target: number }) => (c.metric === "xp" ? dailyGoal() : c.target);
+
 function challengesHtml(): string {
   const d = daily();
   const list = challengesFor(today(), { sprint: sprintOpen() });
@@ -156,10 +166,10 @@ function challengesHtml(): string {
   return `<section class="challenges">
     <div class="unit-head"><div><span class="eyebrow">Heute</span><h3>Tages-Challenges</h3></div><span>${open ? `${open} offen · neue jeden Tag` : "Alle geschafft. Morgen gibt es neue."}</span></div>
     <div class="ch-list">${list.map(c => {
-      const v = Math.min(challengeValue(c, d, todayXp()), c.target);
-      const claimed = d.claimed.includes(c.id), ready = v >= c.target && !claimed;
+      const v = Math.min(challengeValue(c, d, todayXp()), targetOf(c));
+      const claimed = d.claimed.includes(c.id), ready = v >= targetOf(c) && !claimed;
       return `<div class="ch ${claimed ? "claimed" : ready ? "ready" : ""}">
-        <div class="ch-text"><b>${esc(c.text)}</b><div class="ch-bar"><i style="width:${(v / c.target) * 100}%"></i></div><small class="num">${v}/${c.target}</small></div>
+        <div class="ch-text"><b>${esc(c.text)}</b><div class="ch-bar"><i style="width:${(v / targetOf(c)) * 100}%"></i></div><small class="num">${v}/${targetOf(c)}</small></div>
         ${claimed ? `<span class="ch-done">Erledigt</span>` : `<button class="btn small" data-claim="${c.id}" ${ready ? "" : "disabled"}>+${c.coins} Münzen</button>`}
       </div>`;
     }).join("")}</div>
@@ -169,7 +179,7 @@ function challengesHtml(): string {
 function claim(id: string) {
   const d = daily();
   const c = challengesFor(today(), { sprint: sprintOpen() }).find(x => x.id === id);
-  if (!c || d.claimed.includes(id) || challengeValue(c, d, todayXp()) < c.target) return;
+  if (!c || d.claimed.includes(id) || challengeValue(c, d, todayXp()) < targetOf(c)) return;
   d.claimed.push(id);
   store.progress.challengesDone = (store.progress.challengesDone ?? 0) + 1;
   addCoins(c.coins);
@@ -318,9 +328,9 @@ function renderResult(m: HTMLElement) {
     <div class="result-grid">
       <div><b>${p.correct}/${qn}</b><small>richtig</small></div>
       <div><b>${liveStreak()}</b><small>Tage Serie</small></div>
-      <div><b>${Math.min(todayXp(), DAILY_GOAL)}/${DAILY_GOAL}</b><small>Tagesziel</small></div>
+      <div><b>${Math.min(todayXp(), dailyGoal())}/${dailyGoal()}</b><small>Tagesziel</small></div>
     </div>
-    ${todayXp() >= DAILY_GOAL ? `<p class="good-text">Tagesziel erreicht.</p>` : ""}
+    ${todayXp() >= dailyGoal() ? `<p class="good-text">Tagesziel erreicht.</p>` : ""}
   </article>
   <div class="actions">
     ${p.mode === "lesson" && nx && isUnlocked(nx) ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn" id="goNext">Nächste Lektion</button>` : `<button class="btn" id="toPath">Fertig</button>`}

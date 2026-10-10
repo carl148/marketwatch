@@ -1,15 +1,16 @@
 import { celebrate, flushCelebrations } from "./celebrate.ts";
 import { redrawCharts } from "./chart.ts";
-import { DAILY_GOAL } from "./content.ts";
 import { closePlayer, initLearn, inPlayer, renderLearn, renderReview } from "./learn.ts";
 import { renderLexicon } from "./lexicon-view.ts";
+import { needsOnboarding, renderOnboarding } from "./onboarding.ts";
+import { initPremium, renderPremium } from "./premium.ts";
 import { initProfile, renderProfile } from "./profile-view.ts";
 import { stopSprint } from "./sprint.ts";
-import { applyLook, liveStreak, onLevelUp, onNotify, store, today, todayXp } from "./store.ts";
+import { applyLook, dailyGoal, grantWeeklyFreeze, isPremium, liveStreak, onLevelUp, onNotify, store, today, todayXp } from "./store.ts";
 import { renderTools } from "./tools-view.ts";
 import { $, $$, toast } from "./ui.ts";
 
-const TABS = ["learn", "review", "tools", "lexicon", "profile"] as const;
+const TABS = ["learn", "review", "tools", "lexicon", "profile", "premium"] as const;
 type Tab = (typeof TABS)[number];
 let tab: Tab = "learn";
 
@@ -33,8 +34,8 @@ function renderStats() {
   $("#xpNum").textContent = p.xp.toLocaleString("de-DE");
   $("#coinNum").textContent = String(p.coins ?? 0);
   const tx = todayXp();
-  ($("#goalFill") as HTMLElement).style.width = `${Math.min(100, (tx / DAILY_GOAL) * 100)}%`;
-  $("#goalNum").textContent = `${Math.min(tx, DAILY_GOAL)}/${DAILY_GOAL}`;
+  ($("#goalFill") as HTMLElement).style.width = `${Math.min(100, (tx / dailyGoal()) * 100)}%`;
+  $("#goalNum").textContent = `${Math.min(tx, dailyGoal())}/${dailyGoal()}`;
   const n = p.review.length;
   const badge = $("#reviewBadge");
   badge.hidden = !n;
@@ -42,6 +43,10 @@ function renderStats() {
 }
 
 function render() {
+  const m0 = $("#main");
+  document.body.classList.toggle("onboarding-active", needsOnboarding());
+  if (needsOnboarding()) { renderOnboarding(m0, () => { document.body.classList.remove("onboarding-active"); go("learn"); }); return; }
+  document.body.classList.toggle("premium", isPremium());
   renderStats();
   $$("[data-tab]").forEach(b => b.setAttribute("aria-current", String(b.dataset.tab === tab)));
   const m = $("#main");
@@ -50,6 +55,7 @@ function render() {
   else if (tab === "tools") renderTools(m);
   else if (tab === "review") renderReview(m);
   else if (tab === "lexicon") renderLexicon(m);
+  else if (tab === "premium") renderPremium(m);
   else renderProfile(m);
   // Feiern nie mitten in einer Lektion zeigen; dort übernimmt das Ergebnis.
   if (!inPlayer()) setTimeout(() => void flushCelebrations(), 300);
@@ -70,7 +76,9 @@ onNotify(toast);
 onLevelUp(level => celebrate({ kind: "level", level }));
 initLearn({ rerender: render, stats: renderStats });
 initProfile({ rerender: render, stats: renderStats, wiped: () => go("learn") });
+initPremium({ rerender: render, stats: renderStats });
 applyLook();
+if (grantWeeklyFreeze()) setTimeout(() => toast("Premium: Dein wöchentlicher Serienschutz ist da"), 800);
 
 $$("[data-tab]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); location.hash = b.dataset.tab!; }));
 window.addEventListener("hashchange", () => go(location.hash.slice(1)));
