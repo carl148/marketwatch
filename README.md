@@ -4,7 +4,7 @@
 
 Eine spielerische Finanz-Lern-App für Deutschland: kurze Lektionen mit Quiz, Lernserien und XP, ein Übungsstapel für falsche Antworten und fünf Finanzrechner.
 
-Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kostet im Betrieb nichts, funktioniert offline und lässt sich auf dem Handy wie eine App auf den Startbildschirm legen (Progressive Web App).
+Die App ist eine reine Website ohne Server und ohne KI. Sie kostet im Betrieb nichts, funktioniert offline und lässt sich auf dem Handy wie eine App auf den Startbildschirm legen (Progressive Web App).
 
 ## Was drin ist
 
@@ -22,7 +22,8 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 | **Wissens-Sprint** | 60 Sekunden, so viele richtige Antworten wie möglich, nur aus bereits gelernten Lektionen, mit Bestwert |
 | **Finanzlexikon** | Über 60 Begriffe von Abgeltungsteuer bis Zinsbindung, mit Suche und Verweis auf die passende Lektion |
 | **Animationen** | Feier-Fenster bei Level-Aufstieg, Kapitel-Abschluss und Krone (mit Münzregen), Sterne pro Lektion, hochzählende XP, sanftes Feedback bei Antworten. Bei „Bewegung reduzieren“ im Betriebssystem werden sie abgeschaltet |
-| **Konto** | Beim ersten Start: Benutzername, Tagesziel (20 bis 80 XP) und Wissensstand, der den empfohlenen Einstieg bestimmt. Fortschritt per Sicherungscode auf ein anderes Gerät übertragen |
+| **Anmeldung** | Startbildschirm mit App-Namen und Anmeldung per Telefonnummer. Ländervorwahl für über 240 Länder, auswählbar mit Suche nach Name oder Vorwahl oder direkt eingetippt (+43, 0041). Danach Bestätigung mit 6-stelligem SMS-Code. SMS-Versand noch nicht angebunden, siehe unten |
+| **Konto** | Nach der Anmeldung: Benutzername, Tagesziel (20 bis 80 XP) und Wissensstand, der den empfohlenen Einstieg bestimmt. Fortschritt per Sicherungscode auf ein anderes Gerät übertragen |
 | **Premium** | Die vier Vorteile des Originals: sofort alle Lektionen, Lernserie leichter halten (jede Woche ein Serienschutz gratis, bis zu drei), werbefrei, Premium-Benutzername in Gold mit Krone. Bezahlung noch nicht angebunden, siehe unten |
 | **Erfolge** | 20 Erfolge zum Freischalten |
 | **Rechner** | Sparplan mit Diagramm (inkl. Kosten und Inflation), 50/30/20-Budget, Notgroschen, Kredit, Steuer auf Kapitalerträge |
@@ -78,6 +79,12 @@ Bis dahin gibt es auf der Premium-Seite einen **Testmodus**, mit dem sich Premiu
 
 Hinweis: Weil alle Daten im Browser liegen, ließe sich Premium technisch auch ohne Kauf freischalten. Für einen echten Verkauf sollte der Kauf deshalb über den App Store oder einen kleinen Server geprüft werden.
 
+## Anmeldung per SMS
+
+Der Startbildschirm fragt nach der Telefonnummer und danach nach einem Bestätigungscode. Für den echten Versand braucht es einen SMS-Dienst mit Server, zum Beispiel Firebase Authentication, Twilio Verify oder einen eigenen kleinen Server. Dafür müssen nur `sendCode()` und `verifyCode()` in `src/client/login.ts` angepasst werden. SMS kosten je nach Anbieter und Land einige Cent pro Nachricht.
+
+Bis dahin läuft die Anmeldung im **Testmodus** mit dem festen Code 123456, und die Nummer bleibt auf dem Gerät. **Vor der Veröffentlichung `AUTH_TEST_MODE` in `src/client/login.ts` auf `false` setzen** und den Abschnitt zur Anmeldung in der Datenschutzerklärung fertig ausfüllen.
+
 ## Inhalte ändern
 
 - **Lektionen und Quizfragen:** `src/client/content.ts`. Jede Lektion hat Lernkarten (`cards`) und Fragen (`qs`, mit Index der richtigen Antwort `c` und Erklärung `e`).
@@ -106,6 +113,9 @@ src/
   client/store.ts     Speicher im Browser, XP, Münzen, Erfolge
   client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Lerntempo, Auffrischen, Shop
   client/profile-view.ts Profil, Statistik, Kalender, Shop
+  client/login.ts     Startbildschirm, Anmeldung per Telefonnummer und Länderauswahl
+  client/countries.ts Länder mit Vorwahlen
+  client/phone.ts     Telefonnummern prüfen und formatieren
   client/celebrate.ts Feier-Fenster und Animationen
   client/icons.ts     Themen-Symbole für jede Lektion im Lernpfad
   client/sprint.ts    Wissens-Sprint

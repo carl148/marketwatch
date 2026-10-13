@@ -2,6 +2,7 @@ import { celebrate, flushCelebrations } from "./celebrate.ts";
 import { redrawCharts } from "./chart.ts";
 import { closePlayer, initLearn, inPlayer, openChallenges, readyChallenges, renderLearn, renderReview } from "./learn.ts";
 import { renderLexicon } from "./lexicon-view.ts";
+import { needsLogin, renderLogin } from "./login.ts";
 import { needsOnboarding, renderOnboarding } from "./onboarding.ts";
 import { initPremium, renderPremium } from "./premium.ts";
 import { initProfile, renderProfile } from "./profile-view.ts";
@@ -44,6 +45,8 @@ function renderStats() {
 
 function render() {
   const m0 = $("#main");
+  document.body.classList.toggle("login-active", needsLogin());
+  if (needsLogin()) { renderLogin(m0, () => { document.body.classList.remove("login-active"); render(); window.scrollTo(0, 0); }); return; }
   document.body.classList.toggle("onboarding-active", needsOnboarding());
   if (needsOnboarding()) { renderOnboarding(m0, () => { document.body.classList.remove("onboarding-active"); go("learn"); }); return; }
   document.body.classList.toggle("premium", isPremium());

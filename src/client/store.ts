@@ -11,6 +11,8 @@ export interface Profile {
   /** Tagesziel in XP. */
   dailyGoal: number;
   knowledge: string;
+  /** Telefonnummer der Anmeldung im internationalen Format (E.164), z. B. +491701234567. */
+  phone?: string;
   /** Konto beim ersten Start eingerichtet. */
   onboarded: boolean;
   premium: boolean;

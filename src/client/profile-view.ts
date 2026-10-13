@@ -1,6 +1,7 @@
 import { ACHIEVEMENTS, ALL_LESSONS } from "./content.ts";
 import { ACCENTS, FREEZE_PRICE, GOAL_OPTIONS, LEVELS_OF_KNOWLEDGE, dayDiff, rankOf, usernameError, type AccentId } from "./rules.ts";
 import { addCoins, applyLook, exportCode, importCode, isPremium, levelOf, liveStreak, maxFreezes, store, today, unlock } from "./store.ts";
+import { formatPhone } from "./phone.ts";
 import { $, $$, esc, toast } from "./ui.ts";
 
 // Profil: Konto, Premium, Statistik, Aktivitätskalender, Shop, Einstellungen, Daten.
@@ -86,6 +87,7 @@ export function renderProfile(m: HTMLElement) {
 
     <div class="section-title"><h2>Deine Daten</h2></div>
     <div class="panel stack">
+      <div class="set-row"><span><b>Angemeldet mit</b><small class="muted num">${prof.phone ? esc(formatPhone(prof.phone)) : "–"}</small></span><button class="btn ghost small" id="logout">Abmelden</button></div>
       <p class="muted">Fintelify speichert alles nur auf diesem Gerät, ohne Cookies und ohne Tracking. Mit einem Sicherungscode nimmst du deinen Fortschritt auf ein anderes Gerät mit.</p>
       <div class="row-actions"><button class="btn ghost" id="exportBtn">Sicherungscode anzeigen</button><button class="btn ghost" id="importBtn">Fortschritt übertragen</button></div>
       <div id="exportBox" hidden class="stack">
@@ -176,6 +178,12 @@ export function renderProfile(m: HTMLElement) {
     hooks.rerender();
   }));
 
+  $("#logout", m).addEventListener("click", () => {
+    // Abmelden führt zurück zum Startbildschirm. Der Fortschritt bleibt auf dem Gerät.
+    delete prof.phone;
+    store.saveProgress();
+    hooks.wiped();
+  });
   $("#wipe", m).addEventListener("click", () => { $("#wipeConfirm", m).hidden = false; });
   $("#wipeNo", m).addEventListener("click", () => { $("#wipeConfirm", m).hidden = true; });
   $("#wipeYes", m).addEventListener("click", () => { store.wipe(); applyLook(); toast("Alle Daten gelöscht"); hooks.wiped(); });

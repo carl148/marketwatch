@@ -665,3 +665,44 @@ body.in-player .toast { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 .node-badge { position: absolute; right: -2px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--coin); color: #3a2600; box-shadow: 0 0 0 3px var(--bg); }
 .node-badge svg { width: 15px; height: 15px; }
 .node-badge.lock { background: var(--locked-deep); color: var(--muted); }
+
+/* ---- Startbildschirm mit Anmeldung ---- */
+body.login-active .top, body.login-active .tabs, body.login-active .site-foot { display: none; }
+body.login-active { padding-bottom: 0; }
+.login { min-height: 100vh; min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 22px; padding-block: 24px; }
+.login-brand { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.login.intro .login-brand { animation: slide-in .4s ease-out; }
+.login.intro .login-card { animation: slide-in .4s .05s ease-out both; }
+.login-logo { width: 96px; height: 96px; border-radius: 26px; box-shadow: 0 8px 0 #4a1fa3, 0 18px 40px color-mix(in srgb, var(--purple) 35%, transparent); display: block; overflow: hidden; }
+.login-logo svg { width: 100%; height: 100%; display: block; }
+.login-brand h1 { font-family: var(--display); font-size: 40px; font-weight: 800; letter-spacing: -0.02em; margin-top: 10px; background: linear-gradient(90deg, var(--accent), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.login-brand p { color: var(--muted); font-weight: 600; }
+.login-card { width: min(420px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 22px 20px; display: grid; gap: 12px; box-shadow: 0 6px 0 var(--line); }
+.login-card h2 { font-size: 24px; }
+.login-label { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: -4px; }
+.phone-row { display: flex; gap: 8px; }
+.dial-btn { flex: none; display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 2px solid var(--line); border-radius: 14px; padding: 0 12px; font-weight: 700; font-size: 16px; color: var(--ink); }
+.dial-btn .flag { font-size: 22px; line-height: 1; }
+.dial-btn .caret { color: var(--muted); font-size: 12px; }
+.phone-input, .code-input { flex: 1; min-width: 0; width: 100%; background: var(--surface-2); border: 2px solid var(--line); border-radius: 14px; padding: 13px 14px; font-size: 18px; color: var(--ink); }
+.phone-input:focus, .code-input:focus, .dial-btn:focus-visible { border-color: var(--accent); outline: none; }
+.code-input { text-align: center; letter-spacing: .5em; font-size: 26px; padding-block: 12px; font-family: var(--mono); }
+.login-card .btn.wide { padding-block: 15px; font-size: 17px; margin-top: 4px; }
+.login-card .row-actions.center { gap: 18px; }
+.login-test { width: min(420px, 100%); background: var(--coin-soft); border: 1px dashed var(--coin); border-radius: 14px; padding: 10px 14px; font-size: 13.5px; text-align: center; }
+.login-legal { width: min(420px, 100%); text-align: center; }
+
+/* Länderauswahl */
+.picker { position: fixed; inset: 0; z-index: 60; display: grid; align-items: end; justify-items: center; background: color-mix(in srgb, #000 55%, transparent); animation: cel-fade .2s ease-out; }
+.picker-card { width: min(520px, 100%); max-height: 85vh; max-height: 85dvh; background: var(--surface); border-radius: 24px 24px 0 0; padding: 16px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-rows: auto auto 1fr; gap: 12px; animation: sheet-up .25s ease-out; }
+@media (min-width: 600px) { .picker { align-items: center; } .picker-card { border-radius: 24px; max-height: 80vh; } }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.picker-head { display: flex; justify-content: space-between; align-items: center; }
+.picker-head h2 { font-size: 20px; }
+.picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; display: grid; gap: 2px; align-content: start; }
+.picker-list button { width: 100%; display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; text-align: left; background: none; border: 0; border-radius: 12px; padding: 10px; color: var(--ink); font-size: 15px; }
+.picker-list button:hover, .picker-list button:focus-visible { background: var(--surface-2); }
+.picker-list button.sel { background: var(--accent-soft); }
+.picker-list .flag { font-size: 22px; line-height: 1; }
+.picker-list .pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-empty { padding: 16px; text-align: center; }
