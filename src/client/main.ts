@@ -1,12 +1,12 @@
 import { celebrate, flushCelebrations } from "./celebrate.ts";
 import { redrawCharts } from "./chart.ts";
-import { closePlayer, initLearn, inPlayer, renderLearn, renderReview } from "./learn.ts";
+import { closePlayer, initLearn, inPlayer, openChallenges, readyChallenges, renderLearn, renderReview } from "./learn.ts";
 import { renderLexicon } from "./lexicon-view.ts";
 import { needsOnboarding, renderOnboarding } from "./onboarding.ts";
 import { initPremium, renderPremium } from "./premium.ts";
 import { initProfile, renderProfile } from "./profile-view.ts";
 import { stopSprint } from "./sprint.ts";
-import { applyLook, dailyGoal, grantWeeklyFreeze, isPremium, liveStreak, onLevelUp, onNotify, store, today, todayXp } from "./store.ts";
+import { applyLook, dueLessons, grantWeeklyFreeze, isPremium, liveStreak, onLevelUp, onNotify, store, today } from "./store.ts";
 import { renderTools } from "./tools-view.ts";
 import { $, $$, toast } from "./ui.ts";
 
@@ -14,7 +14,7 @@ const TABS = ["learn", "review", "tools", "lexicon", "profile", "premium"] as co
 type Tab = (typeof TABS)[number];
 let tab: Tab = "learn";
 
-let shown = { xp: -1, coins: -1 };
+let shown = { coins: -1 };
 
 /** Kurzer Impuls an einer Anzeige in der Kopfzeile, wenn der Wert steigt. */
 function pulse(id: string) {
@@ -26,16 +26,16 @@ function pulse(id: string) {
 
 function renderStats() {
   const p = store.progress;
-  if (shown.xp >= 0 && p.xp > shown.xp) pulse("#xpStat");
   if (shown.coins >= 0 && (p.coins ?? 0) > shown.coins) pulse("#coinStat");
-  shown = { xp: p.xp, coins: p.coins ?? 0 };
+  shown = { coins: p.coins ?? 0 };
+  const name = p.profile.name || "Fintelify";
+  $("#helloName").textContent = name;
+  $("#avatarBtn").textContent = name.charAt(0).toUpperCase();
   $("#streakNum").textContent = String(liveStreak());
   $("#streakStat").classList.toggle("off", p.lastDay !== today());
-  $("#xpNum").textContent = p.xp.toLocaleString("de-DE");
   $("#coinNum").textContent = String(p.coins ?? 0);
-  const tx = todayXp();
-  ($("#goalFill") as HTMLElement).style.width = `${Math.min(100, (tx / dailyGoal()) * 100)}%`;
-  $("#goalNum").textContent = `${Math.min(tx, dailyGoal())}/${dailyGoal()}`;
+  // Glocke: Punkt, wenn eine Challenge abholbereit ist oder Lektionen zum Auffrischen fällig sind.
+  $("#bellDot").hidden = !(readyChallenges() || dueLessons().length);
   const n = p.review.length;
   const badge = $("#reviewBadge");
   badge.hidden = !n;
@@ -47,6 +47,7 @@ function render() {
   document.body.classList.toggle("onboarding-active", needsOnboarding());
   if (needsOnboarding()) { renderOnboarding(m0, () => { document.body.classList.remove("onboarding-active"); go("learn"); }); return; }
   document.body.classList.toggle("premium", isPremium());
+  document.body.classList.toggle("in-player", inPlayer());
   renderStats();
   $$("[data-tab]").forEach(b => b.setAttribute("aria-current", String(b.dataset.tab === tab)));
   const m = $("#main");
@@ -81,6 +82,12 @@ applyLook();
 if (grantWeeklyFreeze()) setTimeout(() => toast("Premium: Dein wöchentlicher Serienschutz ist da"), 800);
 
 $$("[data-tab]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); location.hash = b.dataset.tab!; }));
+$("#bell").addEventListener("click", e => {
+  e.preventDefault();
+  openChallenges();
+  if (tab !== "learn") location.hash = "learn";
+  requestAnimationFrame(() => $("#challenges")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+});
 window.addEventListener("hashchange", () => go(location.hash.slice(1)));
 window.addEventListener("resize", () => redrawCharts());
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => redrawCharts());

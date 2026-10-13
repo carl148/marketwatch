@@ -16,7 +16,8 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 | **Tages-Challenges** | Jeden Tag drei neue Aufgaben (z. B. „Beantworte 10 Fragen richtig“), die Münzen bringen |
 | **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
 | **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
-| **Profil** | Name, Avatar, Akzentfarbe, Hell- oder Dunkelmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
+| **Design** | Wie im Original: dunkler Hintergrund, blaue Kopfleiste mit „Hallo, Name“, Lernserie, Münzen, Glocke und Avatar. Lernpfad als Zickzack aus runden 3D-Knöpfen mit Kapitel-Trennern, Quiz mit lila Fragekarte und blauen Antwortknöpfen, Navigation unten |
+| **Profil** | Name, Avatar, Akzentfarbe, Dunkel- oder Hellmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
 | **Kapitelprüfungen** | Nach jedem Kapitel eine Prüfung mit 10 gemischten Fragen. Ab 80 % gibt es eine Krone |
 | **Wissens-Sprint** | 60 Sekunden, so viele richtige Antworten wie möglich, nur aus bereits gelernten Lektionen, mit Bestwert |
 | **Finanzlexikon** | Über 60 Begriffe von Abgeltungsteuer bis Zinsbindung, mit Suche und Verweis auf die passende Lektion |

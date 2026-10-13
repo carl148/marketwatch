@@ -173,9 +173,9 @@ export function weekKey(day: string): string {
 export const FREEZE_PRICE = 30;
 export const MAX_FREEZES = 2;
 export const ACCENTS = [
-  { id: "gruen", name: "Grün", price: 0 },
-  { id: "blau", name: "Blau", price: 40 },
+  { id: "blau", name: "Blau", price: 0 },
   { id: "violett", name: "Violett", price: 40 },
+  { id: "gruen", name: "Grün", price: 40 },
   { id: "orange", name: "Orange", price: 40 },
 ] as const;
 export type AccentId = (typeof ACCENTS)[number]["id"];

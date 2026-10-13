@@ -52,6 +52,9 @@ export function renderProfile(m: HTMLElement) {
       ${tile("Sprint-Bestwert", String(p.sprintBest ?? 0))}
     </div>
 
+    <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${ACHIEVEMENTS.filter(x => p.ach[x.id]).length} / ${ACHIEVEMENTS.length}</span></div>
+    <div class="ach">${ACHIEVEMENTS.map(x => `<span class="${p.ach[x.id] ? "got" : ""}">${esc(x.name)}</span>`).join("")}</div>
+
     <div class="section-title"><h2>Aktivität</h2><span class="eyebrow">Letzte 12 Wochen</span></div>
     <div class="panel">${calendar()}</div>
 
@@ -78,7 +81,7 @@ export function renderProfile(m: HTMLElement) {
       <div class="set-row"><span><b>Wissensstand</b><small class="muted">bestimmt den empfohlenen Start</small></span>
         <div class="seg" role="group" aria-label="Wissensstand">${LEVELS_OF_KNOWLEDGE.map(k => `<button data-know-set="${k}" aria-pressed="${prof.knowledge === k}">${k}</button>`).join("")}</div></div>
       <div class="set-row"><span><b>Darstellung</b></span>
-        <div class="seg" role="group" aria-label="Farbschema">${(["system", "light", "dark"] as const).map(t => `<button data-theme-set="${t}" aria-pressed="${prof.theme === t}">${{ system: "Wie Gerät", light: "Hell", dark: "Dunkel" }[t]}</button>`).join("")}</div></div>
+        <div class="seg" role="group" aria-label="Farbschema">${(["dark", "light"] as const).map(t => `<button data-theme-set="${t}" aria-pressed="${prof.theme === t}">${{ light: "Hell", dark: "Dunkel" }[t]}</button>`).join("")}</div></div>
     </div>
 
     <div class="section-title"><h2>Deine Daten</h2></div>

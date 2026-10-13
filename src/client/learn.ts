@@ -1,6 +1,6 @@
-import { ACHIEVEMENTS, ALL_LESSONS, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
+import { ALL_LESSONS, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, type Question } from "./content.ts";
 import { celebrate, countUp, flushCelebrations } from "./celebrate.ts";
-import { EXAM_QUESTIONS, NEW_LESSONS_PER_DAY, SPRINT_MIN_QUESTIONS, challengeValue, challengesFor, examPassed, nextRefresh, starsFor } from "./rules.ts";
+import { EXAM_QUESTIONS, NEW_LESSONS_PER_DAY, SPRINT_MIN_QUESTIONS, challengeValue, challengesFor, examPassed, nextRefresh, rankOf, starsFor } from "./rules.ts";
 import { addCoins, addXp, bump, daily, dailyGoal, dueLessons, isPremium, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
 import { mountSprint } from "./sprint.ts";
 import { $, $$, esc } from "./ui.ts";
@@ -67,8 +67,30 @@ export const learnedQuestionIds = () => ALL_LESSONS.filter(l => store.progress.d
 const sprintOpen = () => learnedQuestionIds().length >= SPRINT_MIN_QUESTIONS;
 const unitDone = (unitId: string) => UNITS.find(u => u.id === unitId)!.lessons.every(l => store.progress.done[l.id]);
 
-/** Kapitel, die der Nutzer auf- oder zugeklappt hat (nur für diese Sitzung). */
-const toggled = new Map<string, boolean>();
+/** Nur beim ersten Öffnen des Lernpfads zur aktuellen Lektion scrollen. */
+let scrolledToNext = false;
+
+const ICON_BARS = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="12" width="4" height="8" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>`;
+const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+const ICON_LOCK = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V8a3 3 0 0 0-6 0z"/></svg>`;
+const ICON_CROWN = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>`;
+const ICON_TARGET = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm0 3.5a2.5 2.5 0 1 0 2.5 2.5A2.5 2.5 0 0 0 12 9.5z"/></svg>`;
+const ICON_BACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>`;
+/** Zickzack des Lernpfads: seitlicher Versatz je Knoten. */
+const ZIGZAG = [0, 1, 2, 1, 0, -1, -2, -1];
+
+/** Challenges, deren Belohnung abgeholt werden kann (für die Glocke). */
+export function readyChallenges(): number {
+  const d = daily();
+  return challengesFor(today(), { sprint: sprintOpen() }).filter(c => !d.claimed.includes(c.id) && challengeValue(c, d, todayXp()) >= targetOf(c)).length;
+}
+
+function lessonNote(l: LessonWithUnit): string {
+  const done = store.progress.done[l.id];
+  if (done) return `${starsFor(done.score, l.qs.length)} von 3 Sternen · ${l.qs.length} Fragen`;
+  if (isUnlocked(l)) return `${l.mins} Min · ${l.qs.length} Fragen`;
+  return pathOpen(l) ? `Heute schon ${NEW_LESSONS_PER_DAY} neue Lektionen geschafft. Morgen geht es weiter.` : "Schließe zuerst die vorherige Lektion ab.";
+}
 
 export function renderLearn(m: HTMLElement) {
   if (player) return renderPlayer(m);
@@ -77,63 +99,102 @@ export function renderLearn(m: HTMLElement) {
   const nx = nextLesson();
   const left = newLeft();
   const due = dueLessons();
-  const doneCount = Object.keys(p.done).length;
-  const heroTitle = !nx ? "Alle Lektionen geschafft" : left > 0 ? "Weiter mit: " + esc(nx.title) : "Für heute alle neuen Lektionen geschafft";
-  const heroText = !nx ? "Halte dein Wissen mit Auffrischen und Üben frisch."
-    : left > 0 ? `${esc(nx.unit.title)} · etwa ${nx.mins} Minuten`
-    : `Morgen warten ${NEW_LESSONS_PER_DAY} neue Lektionen. Bis dahin kannst du auffrischen, üben oder Lektionen wiederholen.`;
+  const tx = todayXp(), goal = dailyGoal();
+  const statusText = !nx ? "Alle Lektionen geschafft. Halte dein Wissen mit Auffrischen und Üben frisch."
+    : left > 0 ? `Weiter mit <b>${esc(nx.title)}</b>`
+    : `Für heute alle neuen Lektionen geschafft. Morgen warten ${NEW_LESSONS_PER_DAY} neue.`;
+  let k = 0;
   m.innerHTML = `
-    <section class="hero">
-      <div>
-        <span class="eyebrow on-dark">${store.progress.profile.name ? `Hallo, ${esc(store.progress.profile.name)} · ` : ""}${doneCount} von ${ALL_LESSONS.length} Lektionen · ${isPremium() ? "Premium: alle offen" : `heute noch ${left} neue`}</span>
-        <h2>${heroTitle}</h2>
-        <p>${heroText}</p>
-        <div class="row-actions hero-actions">
-          ${nx && left > 0 ? `<button class="btn" id="continueBtn">Lektion starten</button>` : ""}
-          ${due.length ? `<button class="btn ${nx && left > 0 ? "ghost-dark" : ""}" id="refreshBtn">${due.length} ${due.length === 1 ? "Lektion" : "Lektionen"} auffrischen</button>` : ""}
-          ${nx && left === 0 && !isPremium() ? `<a class="btn ghost-dark" href="#premium">Mit Premium sofort weiterlernen</a>` : ""}
-        </div>
+    <section class="status">
+      <div class="lvl-badge" aria-hidden="true"><b class="num">${lvl}</b></div>
+      <div class="status-main">
+        <span class="status-rank"><b>Level ${lvl}</b> · ${rankOf(lvl)}</span>
+        <div class="lvl-bar"><i style="width:${((p.xp - a) / (b - a)) * 100}%"></i></div>
+        <span class="small muted num">${p.xp - a} / ${b - a} XP</span>
       </div>
-      <div class="lvl"><span class="eyebrow on-dark">Level</span><b>${lvl}</b><span class="num small">${p.xp - a} / ${b - a} XP</span></div>
-      <div class="lvl-bar"><i style="width:${((p.xp - a) / (b - a)) * 100}%"></i></div>
+      <div class="goal-ring" style="--p:${Math.min(100, (tx / goal) * 100)}" title="Tagesziel: ${Math.min(tx, goal)} von ${goal} XP"><span class="num">${Math.min(tx, goal)}</span><small>/${goal}</small></div>
+      ${due.length || (nx && left === 0 && !isPremium()) || !nx ? `<p class="status-text">${statusText}</p>
+      <div class="row-actions">
+        ${due.length ? `<button class="btn" id="refreshBtn">${due.length} ${due.length === 1 ? "Lektion" : "Lektionen"} auffrischen</button>` : ""}
+        ${nx && left === 0 && !isPremium() ? `<a class="btn purple" href="#premium">Mit Premium weiterlernen</a>` : ""}
+      </div>` : ""}
     </section>
     ${challengesHtml()}
-    <div class="section-title"><h2>Lernpfad</h2><span class="eyebrow">${UNITS.length} Kapitel</span></div>
-    <div class="units">${UNITS.map((u, ui) => {
+    <div class="path">${UNITS.map((u, ui) => {
       const d = u.lessons.filter(l => p.done[l.id]).length;
-      const hasNext = u.lessons.some(l => l.id === nx?.id);
-      const open = toggled.get(u.id) ?? hasNext;
-      return `<details class="unit" data-unit="${u.id}" ${open ? "open" : ""}>
-        <summary class="unit-head">
-          <div><span class="eyebrow">Kapitel ${ui + 1}${d === u.lessons.length ? " · geschafft" : ""}</span><h3>${esc(u.title)}${p.exams?.[u.id]?.passed ? CROWN : ""}</h3></div>
-          <div class="unit-meta"><span>${esc(u.sub)}</span><span class="unit-prog"><i style="width:${(d / u.lessons.length) * 100}%"></i></span><span class="num">${d}/${u.lessons.length}</span></div>
-        </summary>
-        <div class="lessons">${u.lessons.map((l0, li) => {
-          const l = ALL_LESSONS.find(x => x.id === l0.id)!;
-          const done = p.done[l.id], playable = isUnlocked(l), isNext = nx?.id === l.id;
-          const note = done ? miniStars(starsFor(done.score, l.qs.length)) : playable ? `${l.mins} Min · ${l.qs.length} Fragen` : pathOpen(l) ? "Morgen verfügbar" : "Erst vorherige Lektion";
-          return `<button class="lesson ${done ? "done" : ""} ${isNext ? "next" : ""}" data-lesson="${l.id}" ${playable ? "" : "disabled"}>
-            <span class="dot">${done ? "✓" : li + 1}</span>
-            <span><b>${esc(l.title)}</b><small>${note}</small></span>
-          </button>`;
-        }).join("")}</div>
-        ${d === u.lessons.length ? examRow(u.id) : ""}
-      </details>`;
-    }).join("")}</div>
-    <div class="section-title"><h2>Erfolge</h2><span class="eyebrow">${ACHIEVEMENTS.filter(x => p.ach[x.id]).length} / ${ACHIEVEMENTS.length}</span></div>
-    <div class="ach">${ACHIEVEMENTS.map(x => `<span class="${p.ach[x.id] ? "got" : ""}">${esc(x.name)}</span>`).join("")}</div>`;
-  $("#continueBtn", m)?.addEventListener("click", () => nx && startLesson(nx.id));
+      const passed = !!p.exams?.[u.id]?.passed;
+      const lessons = u.lessons.map(l0 => {
+        const l = ALL_LESSONS.find(x => x.id === l0.id)!;
+        const done = p.done[l.id], isNext = nx?.id === l.id;
+        const state = isNext && isUnlocked(l) ? "next" : done ? "done" : isUnlocked(l) ? "open" : "locked";
+        return `<div class="node-row" style="--off:${ZIGZAG[k++ % ZIGZAG.length]}">
+          ${state === "next" ? `<span class="start-tip">Start</span>` : ""}
+          <button class="node ${state}" data-node="${l.id}" aria-label="${esc(l.title)}">${state === "done" ? ICON_CHECK : state === "locked" ? ICON_LOCK : ICON_BARS}</button>
+          ${done ? miniStars(starsFor(done.score, l.qs.length)) : ""}
+        </div>`;
+      }).join("");
+      const examState = passed ? "gold" : d === u.lessons.length ? "open" : "locked";
+      const exam = `<div class="node-row" style="--off:${ZIGZAG[k++ % ZIGZAG.length]}"><button class="node exam ${examState}" data-exam-node="${u.id}" aria-label="Kapitelprüfung ${esc(u.title)}">${ICON_CROWN}</button></div>`;
+      return `<section class="unit-path" data-unit="${u.id}">
+        <div class="path-divider"><span>${esc(u.title)}${passed ? CROWN : ""}</span></div>
+        <p class="path-sub">Kapitel ${ui + 1} · ${esc(u.sub)} · <span class="num">${d}/${u.lessons.length}</span></p>
+        ${lessons}${exam}
+      </section>`;
+    }).join("")}</div>`;
   $("#refreshBtn", m)?.addEventListener("click", startRefresh);
   $$("[data-claim]", m).forEach(b => b.addEventListener("click", () => claim(b.dataset.claim!)));
-  $$("[data-lesson]", m).forEach(b => b.addEventListener("click", () => startLesson(b.dataset.lesson!)));
-  $$<HTMLDetailsElement>("details[data-unit]", m).forEach(d => d.addEventListener("toggle", () => toggled.set(d.dataset.unit!, d.open)));
-  $$("[data-exam]", m).forEach(b => b.addEventListener("click", () => startExam(b.dataset.exam!)));
+  $<HTMLDetailsElement>("#challenges", m).addEventListener("toggle", e => { challengesOpen = (e.target as HTMLDetailsElement).open; });
+  $$("[data-node]", m).forEach(b => b.addEventListener("click", () => lessonPop(b)));
+  $$("[data-exam-node]", m).forEach(b => b.addEventListener("click", () => examPop(b)));
+  if (!scrolledToNext) {
+    scrolledToNext = true;
+    const n = $(".node.next", m);
+    if (n && Object.keys(p.done).length) requestAnimationFrame(() => n.scrollIntoView({ block: "center" }));
+  }
 }
 
-function examRow(unitId: string): string {
+/** Sprechblase unter einem Knoten, wie im Original. Ein zweiter Tipp schließt sie. */
+function showPop(node: HTMLElement, cls: string, html: string): HTMLElement | null {
+  const row = node.closest(".node-row") as HTMLElement;
+  const open = $(".node-pop");
+  const same = open?.previousElementSibling === row;
+  open?.remove();
+  if (same) return null;
+  const pop = document.createElement("div");
+  pop.className = `node-pop ${cls}`;
+  pop.style.setProperty("--off", row.style.getPropertyValue("--off"));
+  pop.innerHTML = html;
+  row.after(pop);
+  pop.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  return pop;
+}
+
+function lessonPop(node: HTMLElement) {
+  const l = ALL_LESSONS.find(x => x.id === node.dataset.node)!;
+  const done = store.progress.done[l.id], playable = isUnlocked(l);
+  const limit = !playable && pathOpen(l) && !isPremium();
+  const pop = showPop(node, playable ? "" : "locked", `
+    <small>${esc(l.unit.title)}</small>
+    <b>${esc(l.title)}</b>
+    <p>${lessonNote(l)}</p>
+    ${playable ? `<button class="btn light" data-go>${done ? "Wiederholen +5 XP" : "Starten +20 XP"}</button>`
+      : limit ? `<a class="btn purple" href="#premium">Mit Premium sofort weiter</a>` : `<button class="btn" disabled>Gesperrt</button>`}`);
+  if (pop) $("[data-go]", pop)?.addEventListener("click", () => startLesson(l.id));
+}
+
+function examPop(node: HTMLElement) {
+  const unitId = node.dataset.examNode!;
+  const u = UNITS.find(x => x.id === unitId)!;
   const e = store.progress.exams?.[unitId];
-  const label = e?.passed ? `Krone erhalten · Bestwert ${e.best}/${e.total}` : e ? `Bestwert ${e.best}/${e.total} · 80 % zum Bestehen` : `${EXAM_QUESTIONS} gemischte Fragen · 80 % für die Krone`;
-  return `<div class="exam-row"><span><b>Kapitelprüfung</b><br><small class="muted">${label}</small></span><button class="btn small" data-exam="${unitId}">${e?.passed ? "Nochmal" : e ? "Erneut versuchen" : "Prüfung starten"}</button></div>`;
+  const open = unitDone(unitId);
+  const label = !open ? "Schließe alle Lektionen des Kapitels ab, um die Prüfung freizuschalten."
+    : e?.passed ? `Krone erhalten · Bestwert ${e.best}/${e.total}` : e ? `Bestwert ${e.best}/${e.total} · 80 % zum Bestehen` : `${EXAM_QUESTIONS} gemischte Fragen · 80 % für die Krone`;
+  const pop = showPop(node, open ? "gold" : "locked", `
+    <small>Kapitelprüfung</small>
+    <b>${esc(u.title)}</b>
+    <p>${label}</p>
+    ${open ? `<button class="btn light" data-go>${e?.passed ? "Nochmal" : e ? "Erneut versuchen" : "Prüfung starten"}</button>` : `<button class="btn" disabled>Gesperrt</button>`}`);
+  if (pop) $("[data-go]", pop)?.addEventListener("click", () => startExam(unitId));
 }
 
 function startExam(unitId: string) {
@@ -163,18 +224,23 @@ function challengesHtml(): string {
   const d = daily();
   const list = challengesFor(today(), { sprint: sprintOpen() });
   const open = list.filter(c => !d.claimed.includes(c.id)).length;
-  return `<section class="challenges">
-    <div class="unit-head"><div><span class="eyebrow">Heute</span><h3>Tages-Challenges</h3></div><span>${open ? `${open} offen · neue jeden Tag` : "Alle geschafft. Morgen gibt es neue."}</span></div>
+  const ready = list.filter(c => !d.claimed.includes(c.id) && challengeValue(c, d, todayXp()) >= targetOf(c)).length;
+  return `<details class="challenges" id="challenges" ${challengesOpen || ready ? "open" : ""}>
+    <summary><span class="ch-ic" aria-hidden="true">${ICON_TARGET}</span><span><b>Tages-Challenges</b><small>${open ? `${list.length - open} von ${list.length} erledigt${ready ? ` · ${ready} abholbereit` : ""}` : "Alle geschafft. Morgen gibt es neue."}</small></span></summary>
     <div class="ch-list">${list.map(c => {
       const v = Math.min(challengeValue(c, d, todayXp()), targetOf(c));
       const claimed = d.claimed.includes(c.id), ready = v >= targetOf(c) && !claimed;
       return `<div class="ch ${claimed ? "claimed" : ready ? "ready" : ""}">
         <div class="ch-text"><b>${esc(c.text)}</b><div class="ch-bar"><i style="width:${(v / targetOf(c)) * 100}%"></i></div><small class="num">${v}/${targetOf(c)}</small></div>
-        ${claimed ? `<span class="ch-done">Erledigt</span>` : `<button class="btn small" data-claim="${c.id}" ${ready ? "" : "disabled"}>+${c.coins} Münzen</button>`}
+        ${claimed ? `<span class="ch-done">Erledigt</span>` : `<button class="btn small" data-claim="${c.id}" ${ready ? "" : "disabled"}>+${c.coins}</button>`}
       </div>`;
     }).join("")}</div>
-  </section>`;
+  </details>`;
 }
+
+/** Ob die Challenges aufgeklappt sind (die Glocke klappt sie auf). */
+let challengesOpen = false;
+export function openChallenges() { challengesOpen = true; const el = $<HTMLDetailsElement>("#challenges"); if (el) el.open = true; }
 
 function claim(id: string) {
   const d = daily();
@@ -212,30 +278,31 @@ function renderPlayer(m: HTMLElement) {
   const total = p.steps.length;
   if (p.i >= total) return renderResult(m);
   const s = p.steps[p.i];
-  const head = `<div class="player-top"><button class="x" id="quit" aria-label="Lektion beenden">×</button><div class="pbar"><i style="width:${(p.i / total) * 100}%"></i></div><span class="num small muted">${p.i + 1}/${total}</span></div>`;
+  const title = s.type === "card" ? "Lektion" : p.mode === "review" ? "Wiederholung" : p.mode === "refresh" ? "Auffrischen" : p.mode === "exam" ? "Prüfung" : "Quiz";
+  const head = `<div class="quiz-top"><button class="back" id="quit" aria-label="Beenden">${ICON_BACK}</button><h2>${title}</h2><span class="num small muted">${p.i + 1}/${total}</span></div>`;
+  const foot = (enabled: boolean) => `<div class="quiz-foot"><div class="pbar"><i style="width:${((p.i + (enabled ? 1 : 0)) / total) * 100}%"></i></div><button class="btn purple wide" id="next" ${enabled ? "" : "disabled"}>Weiter</button></div>`;
   if (s.type === "card") {
-    m.innerHTML = `<div class="player">${head}<article class="card enter"><span class="eyebrow">${esc(p.lesson!.title)}</span><h2>${esc(s.c.h)}</h2><p>${esc(s.c.p)}</p>${s.c.f ? `<div class="fact">${esc(s.c.f)}</div>` : ""}</article>
-      <div class="actions"><button class="btn" id="next">Weiter</button></div></div>`;
+    m.innerHTML = `<div class="player">${head}<article class="learn-card enter"><span class="eyebrow">${esc(p.lesson!.title)}</span><h3>${esc(s.c.h)}</h3><p>${esc(s.c.p)}</p>${s.c.f ? `<div class="fact">${esc(s.c.f)}</div>` : ""}</article>${foot(true)}</div>`;
     $("#next", m).addEventListener("click", () => { p.i++; hooks.rerender(); });
     $("#next", m).focus();
   } else {
     const q = s.q, ans = p.answered;
     const just = p.justAnswered ? " just" : "";
     p.justAnswered = false;
-    const label = p.mode === "review" ? "Wiederholung · " + esc(q.lesson.title) : p.mode === "refresh" ? "Auffrischen · " + esc(q.lesson.title) : p.mode === "exam" ? "Kapitelprüfung · " + esc(q.lesson.unit.title) : "Frage";
-    m.innerHTML = `<div class="player">${head}<article class="card${ans === null ? " enter" : ""}"><span class="eyebrow">${label}</span><h2>${esc(q.q)}</h2>
+    const qNum = p.steps.slice(0, p.i + 1).filter(x => x.type === "q").length;
+    const label = p.mode === "review" || p.mode === "refresh" ? esc(q.lesson.title) : p.mode === "exam" ? esc(q.lesson.unit.title) : "";
+    m.innerHTML = `<div class="player">${head}
+      <div class="q-pill${ans === null ? " enter" : ""}"><span class="q-num num">${qNum}</span><div>${label ? `<small>${label}</small>` : ""}<h3>${esc(q.q)}</h3></div></div>
       <div class="opts">${s.order.map(i => {
-        const t = q.a[i];
         let cls = "";
         if (ans !== null) { if (i === q.c) cls = "right" + (i === ans ? just : ""); else if (i === ans) cls = "wrong" + just; }
-        return `<button class="opt ${cls}" data-i="${i}" ${ans !== null ? "disabled" : ""}>${esc(t)}</button>`;
+        return `<button class="opt ${cls}" data-i="${i}" ${ans !== null ? "disabled" : ""}>${esc(q.a[i])}</button>`;
       }).join("")}</div>
       ${ans !== null ? `<div class="feedback ${ans === q.c ? "good" : "bad"}${just}"><b>${ans === q.c ? "Richtig! +10 XP" : "Nicht ganz."}</b>${esc(q.e)}${ans !== q.c ? "<br><small>Diese Frage landet in deiner Wiederholung.</small>" : ""}</div>` : ""}
-      </article>
-      <div class="actions">${ans !== null ? `<button class="btn" id="next">Weiter</button>` : ""}</div></div>`;
+      ${foot(ans !== null)}</div>`;
     $$(".opt", m).forEach(b => b.addEventListener("click", () => answer(Number(b.dataset.i))));
     const n = $("#next", m);
-    if (n) { n.addEventListener("click", () => { p.answered = null; p.i++; hooks.rerender(); }); n.focus(); }
+    if (ans !== null) { n.addEventListener("click", () => { p.answered = null; p.i++; hooks.rerender(); }); n.focus(); }
   }
   $("#quit", m).addEventListener("click", () => { player = null; hooks.rerender(); });
 }
@@ -333,7 +400,7 @@ function renderResult(m: HTMLElement) {
     ${todayXp() >= dailyGoal() ? `<p class="good-text">Tagesziel erreicht.</p>` : ""}
   </article>
   <div class="actions">
-    ${p.mode === "lesson" && nx && isUnlocked(nx) ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn" id="goNext">Nächste Lektion</button>` : `<button class="btn" id="toPath">Fertig</button>`}
+    ${p.mode === "lesson" && nx && isUnlocked(nx) ? `<button class="btn ghost" id="toPath">Zum Lernpfad</button><button class="btn purple" id="goNext">Nächste Lektion</button>` : `<button class="btn purple wide" id="toPath">Fertig</button>`}
   </div></div>`;
   $("#toPath", m).addEventListener("click", () => { player = null; hooks.rerender(); });
   $("#goNext", m)?.addEventListener("click", () => startLesson(nx!.id));

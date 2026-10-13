@@ -65,7 +65,7 @@ function write(key: string, value: unknown): boolean {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
 }
 
-const freshProfile = (): Profile => ({ name: "", accent: "gruen", theme: "system", unlocked: ["gruen"], dailyGoal: GOAL_OPTIONS[1].xp, knowledge: "Einsteiger", onboarded: false, premium: false });
+const freshProfile = (): Profile => ({ name: "", accent: "blau", theme: "dark", unlocked: ["blau"], dailyGoal: GOAL_OPTIONS[1].xp, knowledge: "Einsteiger", onboarded: false, premium: false });
 const freshProgress = (): Progress => ({
   xp: 0, streak: 0, best: 0, lastDay: null, day: null, dayXp: 0, done: {}, review: [], correct: 0, answered: 0,
   coins: 0, freezes: 0, challengesDone: 0, history: {}, daily: freshDaily(today()), exams: {}, sprintBest: 0, sprints: 0, profile: freshProfile(), ach: {},
@@ -80,6 +80,12 @@ function normalize(raw: Partial<Progress>): Progress {
   p.profile = { ...freshProfile(), ...saved };
   // Wer schon vor der Konto-Einrichtung gelernt hat, muss sie nicht nachholen.
   if (saved && saved.onboarded === undefined && p.xp > 0) p.profile.onboarded = true;
+  // Früher war Grün gratis und "Wie Gerät" Standard. Jetzt ist Blau gratis und Dunkel wie im Original.
+  if (!p.profile.unlocked.includes("blau")) {
+    if (p.profile.accent === "gruen" && p.profile.unlocked.length === 1) { p.profile.accent = "blau"; p.profile.unlocked = ["blau"]; }
+    else p.profile.unlocked.push("blau");
+  }
+  if (p.profile.theme === "system") p.profile.theme = "dark";
   p.daily = { ...freshDaily(today()), ...p.daily };
   return p;
 }

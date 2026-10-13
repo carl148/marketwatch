@@ -1,9 +1,11 @@
-// Erzeugt die PNG-Icons (192, 512, 180) für Startbildschirm und App-Stores,
+// Erzeugt die PNG-Icons (lila Verlauf mit drei weißen Balken) (192, 512, 180) für Startbildschirm und App-Stores,
 // ohne zusätzliche Bibliotheken: einfache Rastergrafik mit Kantenglättung.
 import { writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 
-const GREEN = [27, 122, 82], GOLD = [201, 162, 39], RING = [138, 109, 16];
+const TOP = [181, 123, 255], BOTTOM = [91, 37, 192], WHITE = [255, 255, 255];
+// Drei weiße Balken wie in icon.svg: [x, y, Breite, Höhe] bei 512 px
+const BARS = [[112, 276, 76, 124], [218, 196, 76, 204], [324, 112, 76, 288]];
 
 function crc32(buf) {
   let c, crc = 0xffffffff;
@@ -34,10 +36,12 @@ function icon(size, rounded) {
       // Abgerundetes Quadrat
       const qx = Math.max(Math.abs(px - c) - (c - rr), 0), qy = Math.max(Math.abs(py - c) - (c - rr), 0);
       const dBg = Math.hypot(qx, qy) - rr;
-      const r = Math.hypot(px - c, py - c);
-      let col = GREEN;
-      col = mix(col, GOLD, cover(r - 168 * s));
-      col = mix(col, RING, cover(Math.abs(r - 132 * s) - 8 * s));
+      let col = mix(TOP, BOTTOM, (px + py) / (2 * size));
+      for (const [bx, by, bw, bh] of BARS) {
+        const hx = (bw / 2) * s, hy = (bh / 2) * s, br = 22 * s;
+        const ox = Math.max(Math.abs(px - (bx * s + hx)) - (hx - br), 0), oy = Math.max(Math.abs(py - (by * s + hy)) - (hy - br), 0);
+        col = mix(col, WHITE, cover(Math.hypot(ox, oy) - br));
+      }
       const a = rounded ? cover(dBg) : 1;
       const o = y * (size * 4 + 1) + 1 + x * 4;
       raw[o] = col[0]; raw[o + 1] = col[1]; raw[o + 2] = col[2]; raw[o + 3] = Math.round(a * 255);
