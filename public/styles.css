@@ -657,3 +657,11 @@ body.in-player .toast { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 }
 .node-row:has(.start-tip) { margin-top: 40px; }
 .node-row .mini-stars { margin-top: 6px; }
+
+/* Themen-Symbole auf den Knöpfen, mit kleinem Abzeichen für geschafft oder gesperrt */
+.node { position: relative; }
+.node > svg { width: 34px; height: 34px; }
+.node.locked > svg { opacity: .75; }
+.node-badge { position: absolute; right: -2px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--coin); color: #3a2600; box-shadow: 0 0 0 3px var(--bg); }
+.node-badge svg { width: 15px; height: 15px; }
+.node-badge.lock { background: var(--locked-deep); color: var(--muted); }

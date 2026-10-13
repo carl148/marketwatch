@@ -33,3 +33,12 @@ test("Lexikon: eindeutige Begriffe und gültige Verweise auf Lektionen", async (
   const ids = new Set(ALL_LESSONS.map(l => l.id));
   for (const g of GLOSSARY) if (g.l) assert.ok(ids.has(g.l), `${g.t}: Lektion ${g.l} fehlt`);
 });
+
+test("Jede Lektion hat ein eigenes, vorhandenes Symbol", async () => {
+  const { LESSON_ICON, hasIcon } = await import("../src/client/icons.ts");
+  const { ALL_LESSONS } = await import("../src/client/content.ts");
+  for (const l of ALL_LESSONS) {
+    assert.ok(LESSON_ICON[l.id], `Symbol fehlt: ${l.id}`);
+    assert.ok(hasIcon(LESSON_ICON[l.id]), `Unbekanntes Symbol ${LESSON_ICON[l.id]} bei ${l.id}`);
+  }
+});

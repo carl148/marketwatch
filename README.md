@@ -16,7 +16,7 @@ Die App ist eine reine Website ohne Server, ohne Anmeldung und ohne KI. Sie kost
 | **Tages-Challenges** | Jeden Tag drei neue Aufgaben (z. B. „Beantworte 10 Fragen richtig“), die Münzen bringen |
 | **Lernserie** | Zählt die Tage am Stück. Mit Serienschutz aus dem Shop übersteht sie auch einen verpassten Tag |
 | **Münzen und Shop** | Münzen für Lektionen, Wiederholungen und Challenges. Im Shop gibt es Serienschutz und Akzentfarben |
-| **Design** | Wie im Original: dunkler Hintergrund, blaue Kopfleiste mit „Hallo, Name“, Lernserie, Münzen, Glocke und Avatar. Lernpfad als Zickzack aus runden 3D-Knöpfen mit Kapitel-Trennern, Quiz mit lila Fragekarte und blauen Antwortknöpfen, Navigation unten |
+| **Design** | Wie im Original: dunkler Hintergrund, blaue Kopfleiste mit „Hallo, Name“, Lernserie, Münzen, Glocke und Avatar. Lernpfad als Zickzack aus runden 3D-Knöpfen mit einem passenden Symbol pro Lektion und Kapitel-Trennern, Quiz mit lila Fragekarte und blauen Antwortknöpfen, Navigation unten |
 | **Profil** | Name, Avatar, Akzentfarbe, Dunkel- oder Hellmodus, Statistik (Trefferquote, längste Serie usw.) und ein Aktivitätskalender der letzten 12 Wochen |
 | **Kapitelprüfungen** | Nach jedem Kapitel eine Prüfung mit 10 gemischten Fragen. Ab 80 % gibt es eine Krone |
 | **Wissens-Sprint** | 60 Sekunden, so viele richtige Antworten wie möglich, nur aus bereits gelernten Lektionen, mit Bestwert |
@@ -107,6 +107,7 @@ src/
   client/rules.ts     Spielregeln: Lernserie, Serienschutz, Tages-Challenges, Lerntempo, Auffrischen, Shop
   client/profile-view.ts Profil, Statistik, Kalender, Shop
   client/celebrate.ts Feier-Fenster und Animationen
+  client/icons.ts     Themen-Symbole für jede Lektion im Lernpfad
   client/sprint.ts    Wissens-Sprint
   client/glossary.ts  Begriffe des Finanzlexikons
   client/lexicon-view.ts Lexikon mit Suche

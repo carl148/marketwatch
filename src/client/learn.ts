@@ -2,6 +2,7 @@ import { ALL_LESSONS, QUESTION_BY_ID, UNITS, type Card, type LessonWithUnit, typ
 import { celebrate, countUp, flushCelebrations } from "./celebrate.ts";
 import { EXAM_QUESTIONS, NEW_LESSONS_PER_DAY, SPRINT_MIN_QUESTIONS, challengeValue, challengesFor, examPassed, nextRefresh, rankOf, starsFor } from "./rules.ts";
 import { addCoins, addXp, bump, daily, dailyGoal, dueLessons, isPremium, levelOf, levelStart, liveStreak, recordAnswer, store, today, todayXp, unlock } from "./store.ts";
+import { lessonIcon } from "./icons.ts";
 import { mountSprint } from "./sprint.ts";
 import { $, $$, esc } from "./ui.ts";
 
@@ -70,7 +71,6 @@ const unitDone = (unitId: string) => UNITS.find(u => u.id === unitId)!.lessons.e
 /** Nur beim ersten Öffnen des Lernpfads zur aktuellen Lektion scrollen. */
 let scrolledToNext = false;
 
-const ICON_BARS = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="12" width="4" height="8" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>`;
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
 const ICON_LOCK = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V8a3 3 0 0 0-6 0z"/></svg>`;
 const ICON_CROWN = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>`;
@@ -129,7 +129,7 @@ export function renderLearn(m: HTMLElement) {
         const state = isNext && isUnlocked(l) ? "next" : done ? "done" : isUnlocked(l) ? "open" : "locked";
         return `<div class="node-row" style="--off:${ZIGZAG[k++ % ZIGZAG.length]}">
           ${state === "next" ? `<span class="start-tip">Start</span>` : ""}
-          <button class="node ${state}" data-node="${l.id}" aria-label="${esc(l.title)}">${state === "done" ? ICON_CHECK : state === "locked" ? ICON_LOCK : ICON_BARS}</button>
+          <button class="node ${state}" data-node="${l.id}" aria-label="${esc(l.title)}${state === "done" ? " (geschafft)" : state === "locked" ? " (gesperrt)" : ""}">${lessonIcon(l.id)}${state === "done" ? `<span class="node-badge">${ICON_CHECK}</span>` : state === "locked" ? `<span class="node-badge lock">${ICON_LOCK}</span>` : ""}</button>
           ${done ? miniStars(starsFor(done.score, l.qs.length)) : ""}
         </div>`;
       }).join("");
